@@ -1,6 +1,9 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { Head, Link, useForm } from '@inertiajs/vue3';
+import { inject } from 'vue';
+
+const t = inject('t');
 
 const form = useForm({
     name: '',
@@ -13,7 +16,7 @@ function submit() {
 </script>
 
 <template>
-    <Head title="නව කාණ්ඩ" />
+    <Head :title="t('page.new_category')" />
 
     <AuthenticatedLayout>
         <template #header>
@@ -23,32 +26,32 @@ function submit() {
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
                     </svg>
                 </Link>
-                <h1 class="text-xl font-bold text-gray-800">නව කාණ්ඩ</h1>
+                <h1 class="text-xl font-bold text-gray-800">{{ t('page.new_category') }}</h1>
             </div>
         </template>
 
         <div class="max-w-lg">
             <form @submit.prevent="submit" class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 space-y-5">
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">නම (English) <span class="text-red-500">*</span></label>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">{{ t('prod.name') }} (English) <span class="text-red-500">*</span></label>
                     <input
                         v-model="form.name"
                         type="text"
                         class="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[44px]"
                         :class="{ 'border-red-500': form.errors.name }"
-                        placeholder="Category name"
+                        :placeholder="t('prod.name')"
                         autofocus
                     />
                     <p v-if="form.errors.name" class="text-red-500 text-xs mt-1">{{ form.errors.name }}</p>
                 </div>
 
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">නම (සිංහල)</label>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">{{ t('prod.name_si') }}</label>
                     <input
                         v-model="form.name_si"
                         type="text"
                         class="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[44px]"
-                        placeholder="කාණ්ඩ නම"
+                        :placeholder="t('prod.name_si')"
                     />
                     <p v-if="form.errors.name_si" class="text-red-500 text-xs mt-1">{{ form.errors.name_si }}</p>
                 </div>
@@ -59,13 +62,13 @@ function submit() {
                         :disabled="form.processing"
                         class="flex-1 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-medium py-3 px-6 rounded-lg transition-colors min-h-[44px]"
                     >
-                        {{ form.processing ? 'සුරකිමින්...' : 'සුරකින්න' }}
+                        {{ form.processing ? t('lbl.saving') : t('btn.save') }}
                     </button>
                     <Link
                         :href="route('categories.index')"
                         class="flex-1 text-center bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium py-3 px-6 rounded-lg transition-colors min-h-[44px] flex items-center justify-center"
                     >
-                        ඉවත්වෙන්න  කරන්න
+                        {{ t('lbl.go_back') }}
                     </Link>
                 </div>
             </form>

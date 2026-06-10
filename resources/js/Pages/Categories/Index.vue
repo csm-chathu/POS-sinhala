@@ -1,24 +1,27 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { Head, Link, router } from '@inertiajs/vue3';
+import { inject } from 'vue';
+
+const t = inject('t');
 
 const props = defineProps({
     categories: { type: Array, default: () => [] },
 });
 
 function deleteCategory(id) {
-    if (confirm('මෙම කාණ්ඩය මකා දැමීමට ඔබට විශ්වාසද?')) {
+    if (confirm(t('btn.delete') + '?')) {
         router.delete(route('categories.destroy', id));
     }
 }
 </script>
 
 <template>
-    <Head title="කාණ්ඩ" />
+    <Head :title="t('page.categories')" />
 
     <AuthenticatedLayout>
         <template #header>
-            <h1 class="text-xl font-bold text-gray-800">කාණ්ඩ</h1>
+            <h1 class="text-xl font-bold text-gray-800">{{ t('page.categories') }}</h1>
         </template>
 
         <div class="flex justify-end mb-4">
@@ -29,7 +32,7 @@ function deleteCategory(id) {
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
                 </svg>
-                නව කාණ්ඩ
+                {{ t('btn.add') }}
             </Link>
         </div>
 
@@ -38,14 +41,14 @@ function deleteCategory(id) {
                 <thead>
                     <tr class="text-left text-xs font-semibold text-gray-500 uppercase tracking-wider bg-gray-50 border-b border-gray-100">
                         <th class="px-4 py-3">#</th>
-                        <th class="px-4 py-3">නම (English)</th>
-                        <th class="px-4 py-3">නම (සිංහල)</th>
-                        <th class="px-4 py-3 text-right">ක්‍රියා</th>
+                        <th class="px-4 py-3">{{ t('th.name') }} (English)</th>
+                        <th class="px-4 py-3">{{ t('th.name') }} (සිංහල)</th>
+                        <th class="px-4 py-3 text-right">{{ t('th.actions') }}</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-100">
                     <tr v-if="categories.length === 0">
-                        <td colspan="4" class="px-4 py-8 text-center text-gray-400">කාණ්ඩ නොමැත</td>
+                        <td colspan="4" class="px-4 py-8 text-center text-gray-400">{{ t('lbl.no_data') }}</td>
                     </tr>
                     <tr
                         v-for="(category, idx) in categories"
@@ -61,13 +64,13 @@ function deleteCategory(id) {
                                     :href="route('categories.edit', category.id)"
                                     class="text-blue-600 hover:text-blue-800 text-sm font-medium px-3 py-1.5 rounded hover:bg-blue-50 min-h-[36px] flex items-center"
                                 >
-                                    සංස්කරණය
+                                    {{ t('btn.edit') }}
                                 </Link>
                                 <button
                                     @click="deleteCategory(category.id)"
                                     class="text-red-600 hover:text-red-800 text-sm font-medium px-3 py-1.5 rounded hover:bg-red-50 min-h-[36px]"
                                 >
-                                    මකන්න
+                                    {{ t('btn.delete') }}
                                 </button>
                             </div>
                         </td>

@@ -1,13 +1,15 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { Head, Link, router } from '@inertiajs/vue3';
-import { ref, watch } from 'vue';
+import { ref, watch, inject } from 'vue';
 
 const props = defineProps({
     products: { type: Object, default: () => ({ data: [], links: [], meta: {} }) },
     categories: { type: Array, default: () => [] },
     filters: { type: Object, default: () => ({}) },
 });
+
+const t = inject('t');
 
 const search = ref(props.filters?.search || '');
 const categoryId = ref(props.filters?.category_id || '');
@@ -29,18 +31,18 @@ function formatCurrency(value) {
 }
 
 function deleteProduct(id) {
-    if (confirm('මෙම භාණ්ඩය මකා දැමීමට ඔබට විශ්වාසද?')) {
+    if (confirm(t('btn.delete') + '?')) {
         router.delete(route('products.destroy', id));
     }
 }
 </script>
 
 <template>
-    <Head title="භාණ්ඩ" />
+    <Head :title="t('page.products')" />
 
     <AuthenticatedLayout>
         <template #header>
-            <h1 class="text-xl font-bold text-gray-800">භාණ්ඩ</h1>
+            <h1 class="text-xl font-bold text-gray-800">{{ t('page.products') }}</h1>
         </template>
 
         <!-- Filters & Actions -->
@@ -52,7 +54,7 @@ function deleteProduct(id) {
                 <input
                     v-model="search"
                     type="text"
-                    placeholder="භාණ්ඩ සොයන්න..."
+                    :placeholder="t('pos.search_product')"
                     class="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[44px]"
                 />
             </div>
@@ -60,7 +62,7 @@ function deleteProduct(id) {
                 v-model="categoryId"
                 class="border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[44px]"
             >
-                <option value="">සියලු කාණ්ඩ</option>
+                <option value="">{{ t('lbl.all') }}</option>
                 <option v-for="cat in categories" :key="cat.id" :value="cat.id">{{ cat.name }}</option>
             </select>
             <Link
@@ -70,14 +72,14 @@ function deleteProduct(id) {
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
                 </svg>
-                නව භාණ්ඩ
+                {{ t('btn.new_product') }}
             </Link>
         </div>
 
         <!-- Mobile card list -->
         <div class="md:hidden space-y-3 mb-4">
             <div v-if="products.data?.length === 0" class="bg-white rounded-xl p-6 text-center text-gray-400">
-                භාණ්ඩ නොමැත
+                {{ t('prod.no_products') }}
             </div>
             <div
                 v-for="product in products.data"
@@ -94,20 +96,20 @@ function deleteProduct(id) {
                         class="text-xs font-medium px-2 py-1 rounded-full"
                         :class="product.active ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'"
                     >
-                        {{ product.active ? 'ක්‍රියාත්මක' : 'අක්‍රිය' }}
+                        {{ product.active ? t('lbl.active') : t('lbl.inactive') }}
                     </span>
                 </div>
                 <div class="grid grid-cols-3 gap-2 text-sm mb-3">
                     <div>
-                        <p class="text-gray-400 text-xs">කාණ්ඩය</p>
+                        <p class="text-gray-400 text-xs">{{ t('th.category') }}</p>
                         <p class="font-medium text-gray-700">{{ product.category?.name || '-' }}</p>
                     </div>
                     <div>
-                        <p class="text-gray-400 text-xs">මිල</p>
+                        <p class="text-gray-400 text-xs">{{ t('th.sell_price') }}</p>
                         <p class="font-medium text-green-600">{{ formatCurrency(product.selling_price) }}</p>
                     </div>
                     <div>
-                        <p class="text-gray-400 text-xs">තොගය</p>
+                        <p class="text-gray-400 text-xs">{{ t('th.stock') }}</p>
                         <p class="font-medium" :class="product.stock_qty <= product.alert_qty ? 'text-red-600' : 'text-gray-700'">
                             {{ product.stock_qty }} {{ product.unit }}
                         </p>
@@ -118,13 +120,13 @@ function deleteProduct(id) {
                         :href="route('products.edit', product.id)"
                         class="flex-1 text-center bg-blue-50 hover:bg-blue-100 text-blue-600 py-2 rounded-lg text-sm font-medium transition-colors min-h-[44px] flex items-center justify-center"
                     >
-                        සංස්කරණය
+                        {{ t('btn.edit') }}
                     </Link>
                     <button
                         @click="deleteProduct(product.id)"
                         class="flex-1 bg-red-50 hover:bg-red-100 text-red-600 py-2 rounded-lg text-sm font-medium transition-colors min-h-[44px]"
                     >
-                        මකන්න
+                        {{ t('btn.delete') }}
                     </button>
                 </div>
             </div>
@@ -136,18 +138,18 @@ function deleteProduct(id) {
                 <table class="w-full">
                     <thead>
                         <tr class="text-left text-xs font-semibold text-gray-500 uppercase tracking-wider bg-gray-50 border-b border-gray-100">
-                            <th class="px-4 py-3">භාණ්ඩය</th>
-                            <th class="px-4 py-3">බාකෝඩ්</th>
-                            <th class="px-4 py-3">කාණ්ඩය</th>
-                            <th class="px-4 py-3">විකුණුම් මිල</th>
-                            <th class="px-4 py-3">තොගය</th>
-                            <th class="px-4 py-3">තත්ත්වය</th>
-                            <th class="px-4 py-3 text-right">ක්‍රියා</th>
+                            <th class="px-4 py-3">{{ t('th.product') }}</th>
+                            <th class="px-4 py-3">{{ t('th.barcode') }}</th>
+                            <th class="px-4 py-3">{{ t('th.category') }}</th>
+                            <th class="px-4 py-3">{{ t('th.sell_price') }}</th>
+                            <th class="px-4 py-3">{{ t('th.stock') }}</th>
+                            <th class="px-4 py-3">{{ t('th.status') }}</th>
+                            <th class="px-4 py-3 text-right">{{ t('th.actions') }}</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-gray-100">
                         <tr v-if="products.data?.length === 0">
-                            <td colspan="7" class="px-4 py-8 text-center text-gray-400">භාණ්ඩ නොමැත</td>
+                            <td colspan="7" class="px-4 py-8 text-center text-gray-400">{{ t('prod.no_products') }}</td>
                         </tr>
                         <tr
                             v-for="product in products.data"
@@ -174,7 +176,7 @@ function deleteProduct(id) {
                                     class="text-xs font-medium px-2 py-1 rounded-full"
                                     :class="product.active ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'"
                                 >
-                                    {{ product.active ? 'ක්‍රියාත්මක' : 'අක්‍රිය' }}
+                                    {{ product.active ? t('lbl.active') : t('lbl.inactive') }}
                                 </span>
                             </td>
                             <td class="px-4 py-3">
@@ -183,13 +185,13 @@ function deleteProduct(id) {
                                         :href="route('products.edit', product.id)"
                                         class="text-blue-600 hover:text-blue-800 text-sm font-medium px-3 py-1.5 rounded hover:bg-blue-50 min-h-[36px] flex items-center"
                                     >
-                                        සංස්කරණය
+                                        {{ t('btn.edit') }}
                                     </Link>
                                     <button
                                         @click="deleteProduct(product.id)"
                                         class="text-red-600 hover:text-red-800 text-sm font-medium px-3 py-1.5 rounded hover:bg-red-50 min-h-[36px]"
                                     >
-                                        මකන්න
+                                        {{ t('btn.delete') }}
                                     </button>
                                 </div>
                             </td>

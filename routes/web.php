@@ -31,6 +31,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     // Suppliers & Customers
     Route::resource('suppliers', SupplierController::class);
+    Route::post('/customers/quick-add', [CustomerController::class, 'quickStore'])->name('customers.quick-store');
     Route::resource('customers', CustomerController::class);
     Route::post('/customers/{customer}/settle-credit', [CustomerController::class, 'settleCredit'])->name('customers.settle-credit');
 

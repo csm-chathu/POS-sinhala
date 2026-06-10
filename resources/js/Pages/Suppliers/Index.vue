@@ -1,12 +1,14 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { Head, Link, router } from '@inertiajs/vue3';
-import { ref, watch } from 'vue';
+import { ref, watch, inject } from 'vue';
 
 const props = defineProps({
     suppliers: { type: Object, default: () => ({ data: [], links: [] }) },
     filters: { type: Object, default: () => ({}) },
 });
+
+const t = inject('t');
 
 const search = ref(props.filters?.search || '');
 
@@ -19,18 +21,18 @@ watch(search, () => {
 });
 
 function deleteSupplier(id) {
-    if (confirm('මෙම සැපයුම්කරු මකා දැමීමට ඔබට විශ්වාසද?')) {
+    if (confirm(t('sup.no_suppliers'))) {
         router.delete(route('suppliers.destroy', id));
     }
 }
 </script>
 
 <template>
-    <Head title="සැපයුම්කරුවන්" />
+    <Head :title="t('page.suppliers')" />
 
     <AuthenticatedLayout>
         <template #header>
-            <h1 class="text-xl font-bold text-gray-800">සැපයුම්කරුවන්</h1>
+            <h1 class="text-xl font-bold text-gray-800">{{ t('page.suppliers') }}</h1>
         </template>
 
         <div class="flex flex-col sm:flex-row gap-3 mb-4">
@@ -41,7 +43,7 @@ function deleteSupplier(id) {
                 <input
                     v-model="search"
                     type="text"
-                    placeholder="සැපයුම්කරු සොයන්න..."
+                    :placeholder="t('btn.search') + '...'"
                     class="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[44px]"
                 />
             </div>
@@ -52,14 +54,14 @@ function deleteSupplier(id) {
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
                 </svg>
-                නව සැපයුම්කරු
+                {{ t('page.new_supplier') }}
             </Link>
         </div>
 
         <!-- Mobile cards -->
         <div class="md:hidden space-y-3 mb-4">
             <div v-if="suppliers.data?.length === 0" class="bg-white rounded-xl p-6 text-center text-gray-400">
-                සැපයුම්කරුවන් නොමැත
+                {{ t('sup.no_suppliers') }}
             </div>
             <div
                 v-for="supplier in suppliers.data"
@@ -75,7 +77,7 @@ function deleteSupplier(id) {
                         class="text-xs font-medium px-2 py-1 rounded-full"
                         :class="supplier.active ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'"
                     >
-                        {{ supplier.active ? 'ක්‍රියාත්මක' : 'අක්‍රිය' }}
+                        {{ supplier.active ? t('lbl.active') : t('lbl.inactive') }}
                     </span>
                 </div>
                 <div class="text-sm text-gray-600 space-y-1 mb-3">
@@ -87,13 +89,13 @@ function deleteSupplier(id) {
                         :href="route('suppliers.edit', supplier.id)"
                         class="flex-1 text-center bg-blue-50 hover:bg-blue-100 text-blue-600 py-2 rounded-lg text-sm font-medium transition-colors min-h-[44px] flex items-center justify-center"
                     >
-                        සංස්කරණය
+                        {{ t('btn.edit') }}
                     </Link>
                     <button
                         @click="deleteSupplier(supplier.id)"
                         class="flex-1 bg-red-50 hover:bg-red-100 text-red-600 py-2 rounded-lg text-sm font-medium transition-colors min-h-[44px]"
                     >
-                        මකන්න
+                        {{ t('btn.delete') }}
                     </button>
                 </div>
             </div>
@@ -104,17 +106,17 @@ function deleteSupplier(id) {
             <table class="w-full">
                 <thead>
                     <tr class="text-left text-xs font-semibold text-gray-500 uppercase tracking-wider bg-gray-50 border-b border-gray-100">
-                        <th class="px-4 py-3">නම</th>
-                        <th class="px-4 py-3">සමාගම</th>
-                        <th class="px-4 py-3">දුරකථනය</th>
-                        <th class="px-4 py-3">ඊමේල්</th>
-                        <th class="px-4 py-3">තත්ත්වය</th>
-                        <th class="px-4 py-3 text-right">ක්‍රියා</th>
+                        <th class="px-4 py-3">{{ t('th.name') }}</th>
+                        <th class="px-4 py-3">{{ t('sup.company') }}</th>
+                        <th class="px-4 py-3">{{ t('th.phone') }}</th>
+                        <th class="px-4 py-3">{{ t('th.email') }}</th>
+                        <th class="px-4 py-3">{{ t('th.status') }}</th>
+                        <th class="px-4 py-3 text-right">{{ t('th.actions') }}</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-100">
                     <tr v-if="suppliers.data?.length === 0">
-                        <td colspan="6" class="px-4 py-8 text-center text-gray-400">සැපයුම්කරුවන් නොමැත</td>
+                        <td colspan="6" class="px-4 py-8 text-center text-gray-400">{{ t('sup.no_suppliers') }}</td>
                     </tr>
                     <tr
                         v-for="supplier in suppliers.data"
@@ -130,7 +132,7 @@ function deleteSupplier(id) {
                                 class="text-xs font-medium px-2 py-1 rounded-full"
                                 :class="supplier.active ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'"
                             >
-                                {{ supplier.active ? 'ක්‍රියාත්මක' : 'අක්‍රිය' }}
+                                {{ supplier.active ? t('lbl.active') : t('lbl.inactive') }}
                             </span>
                         </td>
                         <td class="px-4 py-3">
@@ -139,13 +141,13 @@ function deleteSupplier(id) {
                                     :href="route('suppliers.edit', supplier.id)"
                                     class="text-blue-600 hover:text-blue-800 text-sm font-medium px-3 py-1.5 rounded hover:bg-blue-50 min-h-[36px] flex items-center"
                                 >
-                                    සංස්කරණය
+                                    {{ t('btn.edit') }}
                                 </Link>
                                 <button
                                     @click="deleteSupplier(supplier.id)"
                                     class="text-red-600 hover:text-red-800 text-sm font-medium px-3 py-1.5 rounded hover:bg-red-50 min-h-[36px]"
                                 >
-                                    මකන්න
+                                    {{ t('btn.delete') }}
                                 </button>
                             </div>
                         </td>

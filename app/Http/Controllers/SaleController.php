@@ -185,7 +185,15 @@ class SaleController extends Controller
             'user',
         ])->findOrFail($id);
 
-        $settings = \App\Models\Setting::all()->pluck('value', 'key');
+        $settings = \App\Models\Setting::all()->pluck('value', 'key')->toArray();
+
+        if (!empty($settings['logo'])) {
+            $settings['logo_url'] = \Illuminate\Support\Facades\Storage::disk('public')->exists($settings['logo'])
+                ? \Illuminate\Support\Facades\Storage::url($settings['logo'])
+                : null;
+        } else {
+            $settings['logo_url'] = null;
+        }
 
         return Inertia::render('Sales/Show', [
             'sale'     => $sale,

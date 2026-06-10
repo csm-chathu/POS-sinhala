@@ -64,16 +64,16 @@ const flashVisible = ref(true);
                 posFullscreen ? '!hidden' : '',
                 sidebarCollapsed ? 'md:w-16' : 'md:w-64',
             ]"
-            style="background-color:#1E293B;"
+            style="background-color: var(--sidebar-bg, #1e293b);"
         >
             <!-- Brand + collapse toggle -->
             <div
                 class="flex items-center h-16 px-3 flex-shrink-0"
                 :class="sidebarCollapsed ? 'justify-center' : 'justify-between'"
-                style="background-color:#0F172A;"
+                style="background-color: var(--sidebar-header, #0f172a);"
             >
                 <Link :href="route('dashboard')" class="flex items-center gap-2 min-w-0">
-                    <div class="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style="background-color:#2563EB;">
+                    <div class="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style="background-color: var(--sidebar-active, #2563eb);">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
                         </svg>
@@ -85,7 +85,7 @@ const flashVisible = ref(true);
                 <button
                     v-if="!sidebarCollapsed"
                     @click="toggleCollapse"
-                    class="flex-shrink-0 w-7 h-7 rounded-md flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-700 transition-colors"
+                    class="flex-shrink-0 w-7 h-7 rounded-md flex items-center justify-center sidebar-toggle-btn transition-colors"
                     title="Collapse sidebar"
                 >
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -95,7 +95,7 @@ const flashVisible = ref(true);
                 <button
                     v-else
                     @click="toggleCollapse"
-                    class="w-7 h-7 rounded-md flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-700 transition-colors mt-1"
+                    class="w-7 h-7 rounded-md flex items-center justify-center sidebar-toggle-btn transition-colors mt-1"
                     title="Expand sidebar"
                 >
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -105,49 +105,46 @@ const flashVisible = ref(true);
             </div>
 
             <!-- Nav -->
-            <nav class="flex-1 overflow-y-auto py-3 space-y-0.5" :class="sidebarCollapsed ? 'px-2' : 'px-3'">
+            <nav class="flex-1 py-3 space-y-0.5" :class="[sidebarCollapsed ? 'px-2 overflow-y-hidden' : 'px-3 overflow-y-auto']">
                 <template v-for="item in mainNavItems" :key="item.routeName">
                     <Link
                         :href="route(item.routeName)"
                         :title="sidebarCollapsed ? t(item.labelKey) : ''"
-                        class="flex items-center rounded-lg font-medium transition-colors duration-150 min-h-[42px] group relative"
+                        class="sidebar-nav-link flex items-center rounded-lg font-medium transition-colors duration-150 min-h-[42px] group relative"
                         :class="[
                             sidebarCollapsed ? 'justify-center px-0' : 'px-3',
-                            isActive(item.routeName) ? 'text-white' : 'text-slate-300 hover:bg-slate-700 hover:text-white',
+                            isActive(item.routeName) ? 'sidebar-active' : 'sidebar-inactive',
                         ]"
-                        :style="isActive(item.routeName) ? 'background-color:#2563EB' : ''"
                     >
                         <span class="flex-shrink-0" v-html="item.icon"></span>
                         <span v-if="!sidebarCollapsed" class="ml-3 text-sm">{{ t(item.labelKey) }}</span>
                         <span
                             v-if="sidebarCollapsed"
-                            class="absolute left-full ml-2 px-2 py-1 rounded-md text-xs font-medium text-white whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-50"
-                            style="background-color:#0F172A;"
+                            class="sidebar-tooltip absolute left-full ml-2 px-2 py-1 rounded-md text-xs font-medium text-white whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-50"
                         >{{ t(item.labelKey) }}</span>
                     </Link>
                 </template>
 
                 <template v-if="isManager">
                     <div :class="sidebarCollapsed ? 'my-2 border-t border-slate-700' : 'pt-4 pb-1'">
-                        <p v-if="!sidebarCollapsed" class="px-3 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Admin</p>
+                        <p v-if="!sidebarCollapsed" class="px-3 text-[10px] font-semibold sidebar-section-label uppercase tracking-wider">Admin</p>
                     </div>
                     <template v-for="item in adminNavItems" :key="item.routeName">
                         <Link
                             :href="route(item.routeName)"
                             :title="sidebarCollapsed ? t(item.labelKey) : ''"
-                            class="flex items-center rounded-lg font-medium transition-colors duration-150 min-h-[42px] group relative"
+                            class="sidebar-nav-link flex items-center rounded-lg font-medium transition-colors duration-150 min-h-[42px] group relative"
                             :class="[
                                 sidebarCollapsed ? 'justify-center px-0' : 'px-3',
-                                isActive(item.routeName) ? 'bg-blue-600 text-white' : 'text-slate-300 hover:bg-slate-700 hover:text-white',
+                                isActive(item.routeName) ? 'sidebar-active' : 'sidebar-inactive',
                             ]"
                         >
                             <span class="flex-shrink-0" v-html="item.icon"></span>
-                            <span v-if="!sidebarCollapsed" class="ml-3 text-sm">{{ item.label }}</span>
+                            <span v-if="!sidebarCollapsed" class="ml-3 text-sm">{{ t(item.labelKey) }}</span>
                             <span
                                 v-if="sidebarCollapsed"
-                                class="absolute left-full ml-2 px-2 py-1 rounded-md text-xs font-medium text-white whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-50"
-                                style="background-color:#0F172A;"
-                            >{{ item.label }}</span>
+                                class="sidebar-tooltip absolute left-full ml-2 px-2 py-1 rounded-md text-xs font-medium text-white whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-50"
+                            >{{ t(item.labelKey) }}</span>
                         </Link>
                     </template>
                 </template>
@@ -156,19 +153,19 @@ const flashVisible = ref(true);
             <!-- User info at bottom -->
             <div class="border-t border-slate-700 p-3 flex-shrink-0">
                 <div class="flex items-center" :class="sidebarCollapsed ? 'justify-center' : 'gap-3'">
-                    <div class="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0" style="background-color:#2563EB;">
+                    <div class="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0" style="background-color: var(--sidebar-active, #2563eb);">
                         <span class="text-sm font-bold text-white">{{ user?.name?.charAt(0)?.toUpperCase() }}</span>
                     </div>
                     <template v-if="!sidebarCollapsed">
                         <div class="flex-1 min-w-0">
                             <p class="text-sm font-medium text-white truncate">{{ user?.name }}</p>
-                            <p class="text-xs text-slate-400 truncate capitalize">{{ user?.role }}</p>
+                            <p class="text-xs sidebar-muted truncate capitalize">{{ user?.role }}</p>
                         </div>
                         <Link
                             :href="route('logout')"
                             method="post"
                             as="button"
-                            class="text-slate-400 hover:text-white transition-colors flex-shrink-0"
+                            class="sidebar-muted hover:text-white transition-colors flex-shrink-0"
                             title="ලොග් අවුට්"
                         >
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -212,11 +209,11 @@ const flashVisible = ref(true);
                         style="border-color:#E2E8F0; color:#334155;"
                         :title="t('lbl.language')"
                     >
-                        <span>{{ locale === 'si' ? 'EN' : 'සි' }}</span>
+                        <span>{{ locale === 'si' ? 'EN' : locale === 'en' ? 'த' : 'සි' }}</span>
                     </button>
 
                     <div class="hidden sm:flex items-center gap-2">
-                        <div class="w-8 h-8 rounded-full flex items-center justify-center" style="background-color:#2563EB;">
+                        <div class="w-8 h-8 rounded-full flex items-center justify-center" style="background-color: var(--primary, #2563eb);">
                             <span class="text-sm font-bold text-white">{{ user?.name?.charAt(0)?.toUpperCase() }}</span>
                         </div>
                         <div>
@@ -279,10 +276,10 @@ const flashVisible = ref(true);
         </div>
 
         <!-- Mobile drawer -->
-        <aside v-if="sidebarOpen" class="fixed inset-y-0 left-0 z-50 w-64 text-white md:hidden flex flex-col" style="background-color:#1E293B;">
-            <div class="flex items-center justify-between h-16 px-4" style="background-color:#0F172A;">
+        <aside v-if="sidebarOpen" class="fixed inset-y-0 left-0 z-50 w-64 text-white md:hidden flex flex-col" style="background-color: var(--sidebar-bg, #1e293b);">
+            <div class="flex items-center justify-between h-16 px-4" style="background-color: var(--sidebar-header, #0f172a);">
                 <span class="font-bold text-lg text-white">LUMAC POS</span>
-                <button @click="sidebarOpen = false" class="text-slate-400 hover:text-white">
+                <button @click="sidebarOpen = false" class="sidebar-toggle-btn hover:text-white transition-colors">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                     </svg>
@@ -294,24 +291,23 @@ const flashVisible = ref(true);
                     :key="item.routeName"
                     :href="route(item.routeName)"
                     @click="sidebarOpen = false"
-                    class="flex items-center px-3 py-2.5 rounded-lg font-medium transition-colors min-h-[44px] text-sm"
-                    :style="isActive(item.routeName) ? 'background-color:#2563EB' : ''"
-                    :class="isActive(item.routeName) ? 'text-white' : 'text-slate-300 hover:bg-slate-700 hover:text-white'"
+                    class="sidebar-nav-link flex items-center px-3 py-2.5 rounded-lg font-medium transition-colors min-h-[44px] text-sm"
+                    :class="isActive(item.routeName) ? 'sidebar-active' : 'sidebar-inactive'"
                 >
                     <span class="mr-3 flex-shrink-0" v-html="item.icon"></span>
                     {{ t(item.labelKey) }}
                 </Link>
                 <template v-if="isManager">
                     <div class="pt-4 pb-1">
-                        <p class="px-3 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Admin</p>
+                        <p class="px-3 text-[10px] font-semibold sidebar-section-label uppercase tracking-wider">Admin</p>
                     </div>
                     <Link
                         v-for="item in adminNavItems"
                         :key="item.routeName"
                         :href="route(item.routeName)"
                         @click="sidebarOpen = false"
-                        class="flex items-center px-3 py-2.5 rounded-lg font-medium transition-colors min-h-[44px] text-sm"
-                        :class="isActive(item.routeName) ? 'bg-blue-600 text-white' : 'text-slate-300 hover:bg-slate-700 hover:text-white'"
+                        class="sidebar-nav-link flex items-center px-3 py-2.5 rounded-lg font-medium transition-colors min-h-[44px] text-sm"
+                        :class="isActive(item.routeName) ? 'sidebar-active' : 'sidebar-inactive'"
                     >
                         <span class="mr-3 flex-shrink-0" v-html="item.icon"></span>
                         {{ t(item.labelKey) }}
@@ -319,7 +315,7 @@ const flashVisible = ref(true);
                 </template>
             </nav>
             <div class="border-t border-slate-700 p-4">
-                <Link :href="route('logout')" method="post" as="button" class="flex items-center text-slate-300 hover:text-white text-sm min-h-[44px]">
+                <Link :href="route('logout')" method="post" as="button" class="flex items-center sidebar-inactive hover:text-white text-sm min-h-[44px]">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
                     </svg>
@@ -335,7 +331,7 @@ const flashVisible = ref(true);
                 :key="item.routeName"
                 :href="route(item.routeName)"
                 class="flex-1 flex flex-col items-center justify-center py-2 min-h-[56px] text-xs transition-colors"
-                :style="isActive(item.routeName) ? 'color:#2563EB' : ''"
+                :style="isActive(item.routeName) ? 'color: var(--primary, #2563eb)' : ''"
                 :class="isActive(item.routeName) ? '' : 'text-slate-500 hover:text-slate-700'"
             >
                 <span v-html="item.icon" class="mb-1"></span>
@@ -344,3 +340,36 @@ const flashVisible = ref(true);
         </nav>
     </div>
 </template>
+
+<style scoped>
+/* ── Sidebar theming via CSS variables ── */
+.sidebar-nav-link {
+    color: var(--sidebar-text, #cbd5e1);
+}
+.sidebar-nav-link.sidebar-active {
+    background-color: var(--sidebar-active, #2563eb);
+    color: #ffffff;
+}
+.sidebar-nav-link.sidebar-inactive:hover {
+    background-color: var(--sidebar-hover, #334155);
+    color: #ffffff;
+}
+.sidebar-toggle-btn {
+    color: var(--sidebar-text, #94a3b8);
+}
+.sidebar-toggle-btn:hover {
+    color: #ffffff;
+    background-color: var(--sidebar-hover, #334155);
+}
+.sidebar-muted {
+    color: var(--sidebar-text, #94a3b8);
+    opacity: 0.75;
+}
+.sidebar-section-label {
+    color: var(--sidebar-text, #94a3b8);
+    opacity: 0.6;
+}
+.sidebar-tooltip {
+    background-color: var(--sidebar-header, #0f172a);
+}
+</style>

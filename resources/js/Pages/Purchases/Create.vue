@@ -1,7 +1,9 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { Head, Link, useForm } from '@inertiajs/vue3';
-import { computed, ref } from 'vue';
+import { computed, ref, inject } from 'vue';
+
+const t = inject('t');
 
 const props = defineProps({
     suppliers: { type: Array, default: () => [] },
@@ -55,7 +57,7 @@ function submit() {
 </script>
 
 <template>
-    <Head title="නව මිලදී ගැනීම" />
+    <Head :title="t('page.new_purchase')" />
 
     <AuthenticatedLayout>
         <template #header>
@@ -65,7 +67,7 @@ function submit() {
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
                     </svg>
                 </Link>
-                <h1 class="text-xl font-bold text-gray-800">නව මිලදී ගැනීම</h1>
+                <h1 class="text-xl font-bold text-gray-800">{{ t('page.new_purchase') }}</h1>
             </div>
         </template>
 
@@ -74,16 +76,16 @@ function submit() {
 
                 <!-- Header Card -->
                 <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-                    <h2 class="text-sm font-semibold text-gray-700 mb-4 uppercase tracking-wider">සාමාන්‍ය තොරතුරු</h2>
+                    <h2 class="text-sm font-semibold text-gray-700 mb-4 uppercase tracking-wider">{{ t('lbl.general') }}</h2>
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">සැපයුම්කරු <span class="text-red-500">*</span></label>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">{{ t('pur.supplier') }} <span class="text-red-500">*</span></label>
                             <select
                                 v-model="form.supplier_id"
                                 class="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[44px]"
                                 :class="{ 'border-red-500': form.errors.supplier_id }"
                             >
-                                <option value="">සැපයුම්කරුවෙකු තෝරන්න</option>
+                                <option value="">{{ t('lbl.select_customer') }}</option>
                                 <option v-for="supplier in suppliers" :key="supplier.id" :value="supplier.id">
                                     {{ supplier.name }}{{ supplier.company ? ` - ${supplier.company}` : '' }}
                                 </option>
@@ -91,12 +93,12 @@ function submit() {
                             <p v-if="form.errors.supplier_id" class="text-red-500 text-xs mt-1">{{ form.errors.supplier_id }}</p>
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">සටහන</label>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">{{ t('lbl.note') }}</label>
                             <input
                                 v-model="form.note"
                                 type="text"
                                 class="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[44px]"
-                                placeholder="විකල්ප සටහනක්..."
+                                :placeholder="t('lbl.optional')"
                             />
                         </div>
                     </div>
@@ -105,7 +107,7 @@ function submit() {
                 <!-- Items Card -->
                 <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
                     <div class="flex items-center justify-between mb-4">
-                        <h2 class="text-sm font-semibold text-gray-700 uppercase tracking-wider">භාණ්ඩ</h2>
+                        <h2 class="text-sm font-semibold text-gray-700 uppercase tracking-wider">{{ t('th.product') }}</h2>
                         <button
                             type="button"
                             @click="addRow"
@@ -114,17 +116,17 @@ function submit() {
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
                             </svg>
-                            රේඛාව එකතු කරන්න
+                            {{ t('btn.add') }}
                         </button>
                     </div>
 
                     <!-- Desktop table-like layout -->
                     <div class="hidden md:block">
                         <div class="grid grid-cols-12 gap-2 mb-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                            <div class="col-span-5">භාණ්ඩය</div>
-                            <div class="col-span-2 text-center">ප්‍රමාණය</div>
-                            <div class="col-span-3">ඒකක මිල (Rs.)</div>
-                            <div class="col-span-2 text-right">එකතුව</div>
+                            <div class="col-span-5">{{ t('th.product') }}</div>
+                            <div class="col-span-2 text-center">{{ t('th.qty') }}</div>
+                            <div class="col-span-3">{{ t('th.cost') }} (Rs.)</div>
+                            <div class="col-span-2 text-right">{{ t('lbl.total') }}</div>
                         </div>
                         <div
                             v-for="(item, index) in form.items"
@@ -138,7 +140,7 @@ function submit() {
                                     class="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[44px]"
                                     :class="{ 'border-red-500': form.errors[`items.${index}.product_id`] }"
                                 >
-                                    <option value="">භාණ්ඩ තෝරන්න</option>
+                                    <option value="">{{ t('btn.search') }}</option>
                                     <option v-for="product in products" :key="product.id" :value="product.id">
                                         {{ product.name }}
                                     </option>
@@ -187,7 +189,7 @@ function submit() {
                             class="border border-gray-200 rounded-lg p-3 space-y-3"
                         >
                             <div class="flex items-center justify-between">
-                                <span class="text-sm font-medium text-gray-600">රේඛාව {{ index + 1 }}</span>
+                                <span class="text-sm font-medium text-gray-600">{{ index + 1 }}</span>
                                 <button
                                     type="button"
                                     @click="removeRow(index)"
@@ -200,19 +202,19 @@ function submit() {
                                 </button>
                             </div>
                             <div>
-                                <label class="block text-xs text-gray-500 mb-1">භාණ්ඩය</label>
+                                <label class="block text-xs text-gray-500 mb-1">{{ t('th.product') }}</label>
                                 <select
                                     v-model="item.product_id"
                                     @change="onProductChange(index)"
                                     class="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[44px]"
                                 >
-                                    <option value="">භාණ්ඩ තෝරන්න</option>
+                                    <option value="">{{ t('btn.search') }}</option>
                                     <option v-for="product in products" :key="product.id" :value="product.id">{{ product.name }}</option>
                                 </select>
                             </div>
                             <div class="grid grid-cols-2 gap-3">
                                 <div>
-                                    <label class="block text-xs text-gray-500 mb-1">ප්‍රමාණය</label>
+                                    <label class="block text-xs text-gray-500 mb-1">{{ t('th.qty') }}</label>
                                     <input
                                         v-model="item.qty"
                                         type="number"
@@ -221,7 +223,7 @@ function submit() {
                                     />
                                 </div>
                                 <div>
-                                    <label class="block text-xs text-gray-500 mb-1">ඒකක මිල</label>
+                                    <label class="block text-xs text-gray-500 mb-1">{{ t('th.cost') }}</label>
                                     <input
                                         v-model="item.cost_price"
                                         type="number"
@@ -243,7 +245,7 @@ function submit() {
                 <!-- Totals & Submit Card -->
                 <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
                     <div class="flex justify-between items-center mb-6">
-                        <span class="text-lg font-semibold text-gray-800">මුළු එකතුව</span>
+                        <span class="text-lg font-semibold text-gray-800">{{ t('lbl.grand_total') }}</span>
                         <span class="text-2xl font-bold text-blue-600">{{ formatCurrency(grandTotal) }}</span>
                     </div>
 
@@ -256,13 +258,13 @@ function submit() {
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
                             </svg>
-                            {{ form.processing ? 'සුරකිමින්...' : 'මිලදී ගැනීම සුරකින්න' }}
+                            {{ form.processing ? t('lbl.loading') : t('btn.save') }}
                         </button>
                         <Link
                             :href="route('purchases.index')"
                             class="flex-1 text-center bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium py-3 px-6 rounded-lg transition-colors min-h-[44px] flex items-center justify-center"
                         >
-                            ඉවත්වෙන්න  කරන්න
+                            {{ t('btn.cancel') }}
                         </Link>
                     </div>
                 </div>

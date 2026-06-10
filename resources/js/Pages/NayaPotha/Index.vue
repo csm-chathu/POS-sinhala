@@ -1,7 +1,9 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { Head, Link, useForm, usePage } from '@inertiajs/vue3';
-import { ref, computed, watch } from 'vue';
+import { ref, computed, watch, inject } from 'vue';
+
+const t = inject('t');
 
 const props = defineProps({
     customers:   { type: Array, default: () => [] },
@@ -90,11 +92,11 @@ function totalInvoiced(customer) {
 </script>
 
 <template>
-    <Head title="ණය පොත" />
+    <Head :title="t('nav.credit_book')" />
 
     <AuthenticatedLayout>
         <template #header>
-            <h1 class="text-xl font-bold" style="color:#0F172A;">ණය පොත</h1>
+            <h1 class="text-xl font-bold" style="color:#0F172A;">{{ t('nav.credit_book') }}</h1>
         </template>
 
         <!-- Toast -->
@@ -108,11 +110,11 @@ function totalInvoiced(customer) {
         <!-- Summary cards -->
         <div class="mb-5 grid grid-cols-2 sm:grid-cols-3 gap-4">
             <div class="bg-white rounded-xl p-4 shadow-sm" style="border:1px solid #E2E8F0;">
-                <p class="text-xs text-slate-500 mb-1">ණය ගනුදෙනුකරුවන්</p>
+                <p class="text-xs text-slate-500 mb-1">{{ t('credit.customers') }}</p>
                 <p class="text-2xl font-bold" style="color:#DC2626;">{{ customers.length }}</p>
             </div>
             <div class="bg-white rounded-xl p-4 shadow-sm" style="border:1px solid #E2E8F0;">
-                <p class="text-xs text-slate-500 mb-1">මුළු ණය ශේෂය</p>
+                <p class="text-xs text-slate-500 mb-1">{{ t('credit.balance_label') }}</p>
                 <p class="text-2xl font-bold" style="color:#DC2626;">{{ fmt(totalCredit) }}</p>
             </div>
         </div>
@@ -123,7 +125,7 @@ function totalInvoiced(customer) {
             <input
                 v-model="search"
                 type="text"
-                placeholder="නම හෝ දුරකථනය මඟින් සොයන්න..."
+                :placeholder="t('credit.search_placeholder')"
                 class="w-full pl-9 pr-4 py-2.5 rounded-xl border bg-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-300"
                 style="border-color:#E2E8F0;"
             />
@@ -137,14 +139,14 @@ function totalInvoiced(customer) {
             <svg xmlns="http://www.w3.org/2000/svg" class="h-14 w-14 mx-auto mb-3" style="color:#CBD5E1;" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
             </svg>
-            <p class="text-slate-500 font-medium">ණය ශේෂ නොමැත</p>
-            <p class="text-slate-400 text-sm mt-1">සියලු ණය ගෙවා ඇත</p>
+            <p class="text-slate-500 font-medium">{{ t('credit.empty') }}</p>
+            <p class="text-slate-400 text-sm mt-1">{{ t('credit.all_paid') }}</p>
         </div>
 
         <!-- No search results -->
         <div v-else-if="filtered.length === 0" class="bg-white rounded-xl shadow-sm p-10 text-center" style="border:1px solid #E2E8F0;">
-            <p class="text-slate-500 font-medium">ගනුදෙනුකරු හමු නොවීය</p>
-            <p class="text-slate-400 text-sm mt-1">"{{ search }}" සඳහා ප්‍රතිඵල නොමැත</p>
+            <p class="text-slate-500 font-medium">{{ t('credit.not_found') }}</p>
+            <p class="text-slate-400 text-sm mt-1">"{{ search }}" {{ t('lbl.no_results') }}</p>
         </div>
 
         <!-- Customer list -->
@@ -162,16 +164,16 @@ function totalInvoiced(customer) {
                     </div>
                     <div class="text-right flex-shrink-0">
                         <p class="text-lg font-bold" style="color:#DC2626;">{{ fmt(c.credit_balance) }}</p>
-                        <p class="text-xs" style="color:#94A3B8;">ණය ශේෂය</p>
+                        <p class="text-xs" style="color:#94A3B8;">{{ t('credit.balance_label') }}</p>
                     </div>
                     <div class="flex gap-2 flex-shrink-0 ml-2">
                         <!-- Full report -->
                         <button type="button" @click="openReport(c)" class="px-3 py-1.5 rounded-lg text-xs font-semibold" style="background:#EFF6FF; color:#2563EB; border:1px solid #BFDBFE;">
-                            වාර්තාව
+                            {{ t('btn.report') }}
                         </button>
                         <!-- Settle -->
                         <button type="button" @click="openSettle(c)" class="px-3 py-1.5 rounded-lg text-xs font-semibold text-white" style="background-color:#16A34A;">
-                            ගෙවන්න
+                            {{ t('credit.settle_btn') }}
                         </button>
                         <!-- Expand toggle -->
                         <button
@@ -200,7 +202,7 @@ function totalInvoiced(customer) {
                                 ? 'color:#2563EB; border-bottom:2px solid #2563EB; background:white;'
                                 : 'color:#64748B;'"
                         >
-                            ණය ඉන්වොයිස් ({{ c.sales?.length || 0 }})
+                            {{ t('credit.invoices_tab') }} ({{ c.sales?.length || 0 }})
                         </button>
                         <button
                             type="button"
@@ -210,21 +212,21 @@ function totalInvoiced(customer) {
                                 ? 'color:#16A34A; border-bottom:2px solid #16A34A; background:white;'
                                 : 'color:#64748B;'"
                         >
-                            ගෙවූ ඉතිහාසය ({{ c.credit_payments?.length || 0 }})
+                            {{ t('credit.payments_tab') }} ({{ c.credit_payments?.length || 0 }})
                         </button>
                     </div>
 
                     <!-- Credit invoices tab -->
                     <div v-if="expandedTab[c.id] === 'sales'" style="background:#FAFAFA;">
-                        <div v-if="!c.sales?.length" class="px-4 py-4 text-xs text-center" style="color:#94A3B8;">ණය ඉන්වොයිස් නොමැත</div>
+                        <div v-if="!c.sales?.length" class="px-4 py-4 text-xs text-center" style="color:#94A3B8;">{{ t('credit.no_credit_invoices') }}</div>
                         <table v-else class="w-full text-xs">
                             <thead>
                                 <tr style="background:#F1F5F9;">
-                                    <th class="px-4 py-2 text-left font-semibold" style="color:#64748B;">ඉන්වොයිස්</th>
-                                    <th class="px-4 py-2 text-left font-semibold" style="color:#64748B;">දිනය</th>
-                                    <th class="px-4 py-2 text-right font-semibold" style="color:#64748B;">මුළු</th>
-                                    <th class="px-4 py-2 text-right font-semibold" style="color:#64748B;">ගෙවූ</th>
-                                    <th class="px-4 py-2 text-right font-semibold" style="color:#DC2626;">ශේෂය</th>
+                                    <th class="px-4 py-2 text-left font-semibold" style="color:#64748B;">{{ t('th.invoice') }}</th>
+                                    <th class="px-4 py-2 text-left font-semibold" style="color:#64748B;">{{ t('credit.date_time') }}</th>
+                                    <th class="px-4 py-2 text-right font-semibold" style="color:#64748B;">{{ t('lbl.total') }}</th>
+                                    <th class="px-4 py-2 text-right font-semibold" style="color:#64748B;">{{ t('th.paid') }}</th>
+                                    <th class="px-4 py-2 text-right font-semibold" style="color:#DC2626;">{{ t('lbl.balance') }}</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -243,14 +245,14 @@ function totalInvoiced(customer) {
 
                     <!-- Payment history tab -->
                     <div v-if="expandedTab[c.id] === 'payments'" style="background:#FAFAFA;">
-                        <div v-if="!c.credit_payments?.length" class="px-4 py-4 text-xs text-center" style="color:#94A3B8;">ගෙවීම් ඉතිහාසය නොමැත</div>
+                        <div v-if="!c.credit_payments?.length" class="px-4 py-4 text-xs text-center" style="color:#94A3B8;">{{ t('credit.no_history') }}</div>
                         <table v-else class="w-full text-xs">
                             <thead>
                                 <tr style="background:#F1F5F9;">
                                     <th class="px-4 py-2 text-left font-semibold" style="color:#64748B;">#</th>
-                                    <th class="px-4 py-2 text-left font-semibold" style="color:#64748B;">දිනය සහ වේලාව</th>
-                                    <th class="px-4 py-2 text-right font-semibold" style="color:#16A34A;">ගෙවූ මුදල</th>
-                                    <th class="px-4 py-2 text-left font-semibold" style="color:#64748B;">සටහන</th>
+                                    <th class="px-4 py-2 text-left font-semibold" style="color:#64748B;">{{ t('credit.date_time') }}</th>
+                                    <th class="px-4 py-2 text-right font-semibold" style="color:#16A34A;">{{ t('th.paid') }}</th>
+                                    <th class="px-4 py-2 text-left font-semibold" style="color:#64748B;">{{ t('lbl.note') }}</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -263,7 +265,7 @@ function totalInvoiced(customer) {
                             </tbody>
                             <tfoot>
                                 <tr style="background:#F0FDF4; border-top:2px solid #BBF7D0;">
-                                    <td colspan="2" class="px-4 py-2 font-semibold text-xs" style="color:#166534;">මුළු ගෙවූ</td>
+                                    <td colspan="2" class="px-4 py-2 font-semibold text-xs" style="color:#166534;">{{ t('credit.total_paid') }}</td>
                                     <td class="px-4 py-2 text-right font-bold" style="color:#16A34A;">{{ fmt(totalPaid(c)) }}</td>
                                     <td></td>
                                 </tr>
@@ -278,17 +280,17 @@ function totalInvoiced(customer) {
         <Teleport to="body">
             <div v-if="settleModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
                 <div class="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6 space-y-4">
-                    <h2 class="text-lg font-bold" style="color:#0F172A;">ණය ගෙවීම</h2>
+                    <h2 class="text-lg font-bold" style="color:#0F172A;">{{ t('credit.settle_title') }}</h2>
 
                     <div class="rounded-xl px-4 py-3 space-y-1" style="background:#FEF2F2; border:1px solid #FECACA;">
                         <p class="text-sm font-semibold" style="color:#0F172A;">{{ settleCustomer?.name }}</p>
                         <p class="text-xs" style="color:#64748B;">
-                            ණය ශේෂය: <span class="font-bold" style="color:#DC2626;">{{ fmt(settleCustomer?.credit_balance) }}</span>
+                            {{ t('credit.balance_label') }}: <span class="font-bold" style="color:#DC2626;">{{ fmt(settleCustomer?.credit_balance) }}</span>
                         </p>
                     </div>
 
                     <div>
-                        <label class="block text-sm font-medium mb-1.5" style="color:#334155;">ගෙවන මුදල (Rs.)</label>
+                        <label class="block text-sm font-medium mb-1.5" style="color:#334155;">{{ t('credit.amount_label') }} (Rs.)</label>
                         <input
                             v-model="settleForm.amount"
                             type="number"
@@ -316,16 +318,16 @@ function totalInvoiced(customer) {
                                 @click="settleForm.amount = settleCustomer?.credit_balance"
                                 class="px-2.5 py-1 rounded-lg text-xs font-semibold"
                                 style="background:#FEF2F2; border:1px solid #FECACA; color:#DC2626;"
-                            >සම්පූර්ණ</button>
+                            >{{ t('btn.full') }}</button>
                         </div>
                     </div>
 
                     <div>
-                        <label class="block text-sm font-medium mb-1.5" style="color:#334155;">සටහන (විකල්ප)</label>
+                        <label class="block text-sm font-medium mb-1.5" style="color:#334155;">{{ t('lbl.note') }} ({{ t('lbl.optional') }})</label>
                         <input
                             v-model="settleForm.note"
                             type="text"
-                            placeholder="ගෙවීමේ හේතුව..."
+                            :placeholder="t('credit.note_placeholder')"
                             class="w-full border rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-300"
                             style="border-color:#D1FAE5;"
                         />
@@ -339,10 +341,10 @@ function totalInvoiced(customer) {
                             class="flex-1 text-white font-semibold py-3 rounded-xl disabled:opacity-50"
                             style="background-color:#16A34A;"
                         >
-                            {{ settleForm.processing ? 'සටහන් කරමින්...' : 'ගෙවීම සටහන් කරන්න' }}
+                            {{ settleForm.processing ? t('lbl.saving') : t('credit.confirm_settle') }}
                         </button>
                         <button type="button" @click="settleModal = false" class="flex-1 font-semibold py-3 rounded-xl" style="background:#F1F5F9; color:#64748B;">
-                            ඉවත්වෙන්න
+                            {{ t('lbl.go_back') }}
                         </button>
                     </div>
                 </div>
@@ -371,15 +373,15 @@ function totalInvoiced(customer) {
                     <!-- Summary -->
                     <div class="grid grid-cols-3 gap-0" style="border-bottom:1px solid #E2E8F0;">
                         <div class="px-6 py-4 text-center" style="border-right:1px solid #E2E8F0;">
-                            <p class="text-xs text-slate-500 mb-1">ශේෂ ණය</p>
+                            <p class="text-xs text-slate-500 mb-1">{{ t('credit.balance_label') }}</p>
                             <p class="text-xl font-bold" style="color:#DC2626;">{{ fmt(reportCustomer.credit_balance) }}</p>
                         </div>
                         <div class="px-6 py-4 text-center" style="border-right:1px solid #E2E8F0;">
-                            <p class="text-xs text-slate-500 mb-1">ඉන්වොයිස් ශේෂ</p>
+                            <p class="text-xs text-slate-500 mb-1">{{ t('credit.invoice_balance') }}</p>
                             <p class="text-xl font-bold" style="color:#7C3AED;">{{ fmt(totalInvoiced(reportCustomer)) }}</p>
                         </div>
                         <div class="px-6 py-4 text-center">
-                            <p class="text-xs text-slate-500 mb-1">මුළු ගෙවූ</p>
+                            <p class="text-xs text-slate-500 mb-1">{{ t('credit.total_paid') }}</p>
                             <p class="text-xl font-bold" style="color:#16A34A;">{{ fmt(totalPaid(reportCustomer)) }}</p>
                         </div>
                     </div>
@@ -388,16 +390,16 @@ function totalInvoiced(customer) {
 
                         <!-- Credit invoices -->
                         <div>
-                            <h3 class="text-sm font-bold mb-2" style="color:#0F172A;">ණය ඉන්වොයිස්</h3>
-                            <div v-if="!reportCustomer.sales?.length" class="text-xs text-slate-400 py-2">ශේෂ ඉන්වොයිස් නොමැත</div>
+                            <h3 class="text-sm font-bold mb-2" style="color:#0F172A;">{{ t('credit.invoices_tab') }}</h3>
+                            <div v-if="!reportCustomer.sales?.length" class="text-xs text-slate-400 py-2">{{ t('credit.no_credit_invoices') }}</div>
                             <table v-else class="w-full text-xs rounded-xl overflow-hidden" style="border:1px solid #E2E8F0;">
                                 <thead>
                                     <tr style="background:#F8FAFC;">
-                                        <th class="px-3 py-2 text-left" style="color:#64748B;">ඉන්වොයිස්</th>
-                                        <th class="px-3 py-2 text-left" style="color:#64748B;">දිනය</th>
-                                        <th class="px-3 py-2 text-right" style="color:#64748B;">මුළු</th>
-                                        <th class="px-3 py-2 text-right" style="color:#64748B;">ගෙවූ</th>
-                                        <th class="px-3 py-2 text-right" style="color:#DC2626;">ශේෂය</th>
+                                        <th class="px-3 py-2 text-left" style="color:#64748B;">{{ t('th.invoice') }}</th>
+                                        <th class="px-3 py-2 text-left" style="color:#64748B;">{{ t('th.date') }}</th>
+                                        <th class="px-3 py-2 text-right" style="color:#64748B;">{{ t('lbl.total') }}</th>
+                                        <th class="px-3 py-2 text-right" style="color:#64748B;">{{ t('th.paid') }}</th>
+                                        <th class="px-3 py-2 text-right" style="color:#DC2626;">{{ t('lbl.balance') }}</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -416,15 +418,15 @@ function totalInvoiced(customer) {
 
                         <!-- Payment history -->
                         <div>
-                            <h3 class="text-sm font-bold mb-2" style="color:#0F172A;">ගෙවීම් ඉතිහාසය</h3>
-                            <div v-if="!reportCustomer.credit_payments?.length" class="text-xs text-slate-400 py-2">ගෙවීම් ඉතිහාසය නොමැත</div>
+                            <h3 class="text-sm font-bold mb-2" style="color:#0F172A;">{{ t('credit.payments_tab') }}</h3>
+                            <div v-if="!reportCustomer.credit_payments?.length" class="text-xs text-slate-400 py-2">{{ t('credit.no_history') }}</div>
                             <table v-else class="w-full text-xs rounded-xl overflow-hidden" style="border:1px solid #E2E8F0;">
                                 <thead>
                                     <tr style="background:#F8FAFC;">
                                         <th class="px-3 py-2 text-left" style="color:#64748B;">#</th>
-                                        <th class="px-3 py-2 text-left" style="color:#64748B;">දිනය සහ වේලාව</th>
-                                        <th class="px-3 py-2 text-right" style="color:#16A34A;">ගෙවූ</th>
-                                        <th class="px-3 py-2 text-left" style="color:#64748B;">සටහන</th>
+                                        <th class="px-3 py-2 text-left" style="color:#64748B;">{{ t('credit.date_time') }}</th>
+                                        <th class="px-3 py-2 text-right" style="color:#16A34A;">{{ t('th.paid') }}</th>
+                                        <th class="px-3 py-2 text-left" style="color:#64748B;">{{ t('lbl.note') }}</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -437,7 +439,7 @@ function totalInvoiced(customer) {
                                 </tbody>
                                 <tfoot>
                                     <tr style="background:#F0FDF4; border-top:2px solid #BBF7D0;">
-                                        <td colspan="2" class="px-3 py-2 font-bold text-xs" style="color:#166534;">මුළු ගෙවූ</td>
+                                        <td colspan="2" class="px-3 py-2 font-bold text-xs" style="color:#166534;">{{ t('credit.total_paid') }}</td>
                                         <td class="px-3 py-2 text-right font-bold" style="color:#16A34A;">{{ fmt(totalPaid(reportCustomer)) }}</td>
                                         <td></td>
                                     </tr>
@@ -453,9 +455,9 @@ function totalInvoiced(customer) {
                             @click="openSettle(reportCustomer); reportCustomer = null"
                             class="flex-1 text-white font-semibold py-2.5 rounded-xl text-sm"
                             style="background-color:#16A34A;"
-                        >ගෙවන්න</button>
+                        >{{ t('credit.settle_btn') }}</button>
                         <button type="button" @click="reportCustomer = null" class="flex-1 font-semibold py-2.5 rounded-xl text-sm" style="background:#F1F5F9; color:#64748B;">
-                            වසන්න
+                            {{ t('btn.close') }}
                         </button>
                     </div>
                 </div>

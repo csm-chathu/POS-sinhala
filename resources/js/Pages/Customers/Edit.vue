@@ -1,6 +1,9 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { Head, Link, useForm } from '@inertiajs/vue3';
+import { inject } from 'vue';
+
+const t = inject('t');
 
 const props = defineProps({
     customer: { type: Object, required: true },
@@ -20,7 +23,7 @@ function submit() {
 </script>
 
 <template>
-    <Head title="පාරිභෝගිකයා සංස්කරණය" />
+    <Head :title="t('page.edit_product')" />
 
     <AuthenticatedLayout>
         <template #header>
@@ -30,7 +33,7 @@ function submit() {
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
                     </svg>
                 </Link>
-                <h1 class="text-xl font-bold text-gray-800">පාරිභෝගිකයා සංස්කරණය</h1>
+                <h1 class="text-xl font-bold text-gray-800">{{ t('page.customers') }}</h1>
             </div>
         </template>
 
@@ -38,7 +41,7 @@ function submit() {
             <form @submit.prevent="submit" class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 space-y-5">
 
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">නම <span class="text-red-500">*</span></label>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">{{ t('cust.name') }} <span class="text-red-500">*</span></label>
                     <input
                         v-model="form.name"
                         type="text"
@@ -50,7 +53,7 @@ function submit() {
 
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">දුරකථනය</label>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">{{ t('cust.phone') }}</label>
                         <input
                             v-model="form.phone"
                             type="tel"
@@ -60,7 +63,7 @@ function submit() {
                         <p v-if="form.errors.phone" class="text-red-500 text-xs mt-1">{{ form.errors.phone }}</p>
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">ඊමේල්</label>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">{{ t('cust.email') }}</label>
                         <input
                             v-model="form.email"
                             type="email"
@@ -72,7 +75,7 @@ function submit() {
                 </div>
 
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">ලිපිනය</label>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">{{ t('cust.address') }}</label>
                     <textarea
                         v-model="form.address"
                         rows="3"
@@ -81,7 +84,7 @@ function submit() {
                 </div>
 
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">ණය සීමාව (Rs.)</label>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">{{ t('cust.credit_limit') }} (Rs.)</label>
                     <input
                         v-model="form.credit_limit"
                         type="number"
@@ -95,7 +98,7 @@ function submit() {
 
                 <!-- Read-only credit balance info -->
                 <div class="bg-gray-50 rounded-lg p-4">
-                    <p class="text-sm text-gray-500">වත්මන් ණය ශේෂය</p>
+                    <p class="text-sm text-gray-500">{{ t('lbl.credit_balance') }}</p>
                     <p class="text-lg font-bold" :class="props.customer.credit_balance > 0 ? 'text-red-600' : 'text-green-600'">
                         Rs. {{ Number(props.customer.credit_balance || 0).toLocaleString('en-LK', { minimumFractionDigits: 2 }) }}
                     </p>
@@ -107,13 +110,13 @@ function submit() {
                         :disabled="form.processing"
                         class="flex-1 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-medium py-3 px-6 rounded-lg transition-colors min-h-[44px]"
                     >
-                        {{ form.processing ? 'සුරකිමින්...' : 'සුරකින්න' }}
+                        {{ form.processing ? t('lbl.loading') : t('btn.save') }}
                     </button>
                     <Link
                         :href="route('customers.index')"
                         class="flex-1 text-center bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium py-3 px-6 rounded-lg transition-colors min-h-[44px] flex items-center justify-center"
                     >
-                        ඉවත්වෙන්න  කරන්න
+                        {{ t('btn.cancel') }}
                     </Link>
                 </div>
             </form>

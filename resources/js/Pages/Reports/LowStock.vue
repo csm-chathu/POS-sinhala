@@ -1,6 +1,9 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { Head, Link } from '@inertiajs/vue3';
+import { inject } from 'vue';
+
+const t = inject('t');
 
 const props = defineProps({
     products: { type: Object, default: () => ({ data: [] }) },
@@ -8,14 +11,14 @@ const props = defineProps({
 </script>
 
 <template>
-    <Head title="අඩු තොග වාර්තාව" />
+    <Head :title="t('rep.low_stock')" />
     <AuthenticatedLayout>
         <template #header>
             <div class="flex items-center gap-3">
                 <Link :href="route('reports.index')" class="text-slate-400 hover:text-slate-600">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>
                 </Link>
-                <h1 class="text-xl font-bold" style="color:#0F172A;">අඩු තොග — {{ products.total }} භාණ්ඩ</h1>
+                <h1 class="text-xl font-bold" style="color:#0F172A;">{{ t('rep.low_stock_title') }} — {{ products.total }}</h1>
             </div>
         </template>
 
@@ -24,15 +27,15 @@ const props = defineProps({
                 <table class="w-full">
                     <thead>
                         <tr class="text-xs text-slate-500 uppercase" style="background:#F8FAFC; border-bottom:1px solid #E2E8F0;">
-                            <th class="px-4 py-3 text-left">භාණ්ඩය</th>
-                            <th class="px-4 py-3 text-left">ගණය</th>
-                            <th class="px-4 py-3 text-center">ඇති ප්‍රමාණය</th>
-                            <th class="px-4 py-3 text-center">අනතුරු ප්‍රමාණය</th>
-                            <th class="px-4 py-3 text-center">තත්ත්වය</th>
+                            <th class="px-4 py-3 text-left">{{ t('th.product') }}</th>
+                            <th class="px-4 py-3 text-left">{{ t('th.category') }}</th>
+                            <th class="px-4 py-3 text-center">{{ t('rep.current_stock') }}</th>
+                            <th class="px-4 py-3 text-center">{{ t('rep.alert_qty') }}</th>
+                            <th class="px-4 py-3 text-center">{{ t('th.status') }}</th>
                         </tr>
                     </thead>
                     <tbody>
-                        <tr v-if="products.data.length === 0"><td colspan="5" class="px-4 py-8 text-center text-slate-400">අඩු තොග නොමැත</td></tr>
+                        <tr v-if="products.data.length === 0"><td colspan="5" class="px-4 py-8 text-center text-slate-400">{{ t('rep.no_low_stock') }}</td></tr>
                         <tr v-for="p in products.data" :key="p.id" class="hover:bg-slate-50" style="border-bottom:1px solid #F1F5F9;">
                             <td class="px-4 py-2.5">
                                 <p class="font-medium" style="color:#0F172A;">{{ p.name }}</p>
@@ -49,12 +52,12 @@ const props = defineProps({
                                 <span v-if="p.stock_qty <= 0"
                                     class="px-2 py-0.5 rounded-full text-xs font-semibold text-white"
                                     style="background-color:#DC2626;">
-                                    තොග නැත
+                                    {{ t('lbl.no') }}
                                 </span>
                                 <span v-else
                                     class="px-2 py-0.5 rounded-full text-xs font-semibold text-white"
                                     style="background-color:#F59E0B;">
-                                    අඩුයි
+                                    {{ t('rep.low_stock_title') }}
                                 </span>
                             </td>
                         </tr>

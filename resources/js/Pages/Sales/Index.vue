@@ -1,7 +1,9 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { Head, Link, router } from '@inertiajs/vue3';
-import { ref, watch, computed } from 'vue';
+import { ref, watch, computed, inject } from 'vue';
+
+const t = inject('t');
 
 const props = defineProps({
     sales: { type: Object, default: () => ({ data: [], links: [], meta: {} }) },
@@ -39,12 +41,13 @@ function formatTime(dateStr) {
     return new Date(dateStr).toLocaleTimeString('en-LK', { hour: '2-digit', minute: '2-digit' });
 }
 
-const statusLabel = {
-    completed: 'සම්පූර්ණ',
-    pending: 'අපේක්ෂිත',
-    cancelled: 'ඉවත්වෙන්න ',
-    credit: 'ණය',
-};
+const statusLabel = computed(() => ({
+    completed: t('btn.complete'),
+    pending: t('th.status'),
+    cancelled: t('btn.cancel'),
+    credit: t('lbl.credit'),
+}));
+
 const statusClass = {
     completed: 'bg-green-100 text-green-700',
     pending: 'bg-yellow-100 text-yellow-700',
@@ -54,12 +57,12 @@ const statusClass = {
 </script>
 
 <template>
-    <Head title="විකුණුම්" />
+    <Head :title="t('page.sales')" />
 
     <AuthenticatedLayout>
         <template #header>
             <div class="flex items-center justify-between">
-                <h1 class="text-xl font-bold text-gray-800">විකුණුම්</h1>
+                <h1 class="text-xl font-bold text-gray-800">{{ t('page.sales') }}</h1>
                 <Link
                     :href="route('sales.create')"
                     class="inline-flex items-center bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors min-h-[44px]"
@@ -67,7 +70,7 @@ const statusClass = {
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
                     </svg>
-                    නව විකුණුම
+                    {{ t('btn.new_sale') }}
                 </Link>
             </div>
         </template>
@@ -81,7 +84,7 @@ const statusClass = {
                 <input
                     v-model="search"
                     type="text"
-                    placeholder="ඉන්වොයිස් අංකය සොයන්න..."
+                    :placeholder="t('lbl.invoice_no')"
                     class="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[44px]"
                 />
             </div>
@@ -100,7 +103,7 @@ const statusClass = {
         <!-- Mobile cards -->
         <div class="md:hidden space-y-3 mb-4">
             <div v-if="sales.data?.length === 0" class="bg-white rounded-xl p-6 text-center text-gray-400">
-                විකුණුම් නොමැත
+                {{ t('lbl.no_data') }}
             </div>
             <div
                 v-for="sale in sales.data"
@@ -110,7 +113,7 @@ const statusClass = {
                 <div class="flex justify-between items-start mb-2">
                     <div>
                         <p class="font-semibold text-gray-900">{{ sale.invoice_no }}</p>
-                        <p class="text-sm text-gray-500">{{ sale.customer?.name || 'සාමාන්‍ය' }}</p>
+                        <p class="text-sm text-gray-500">{{ sale.customer?.name || t('lbl.general') }}</p>
                         <p class="text-xs text-gray-400">{{ sale.user?.name }} · {{ formatDate(sale.created_at) }}</p>
                     </div>
                     <div class="text-right">
@@ -127,7 +130,7 @@ const statusClass = {
                     :href="route('sales.show', sale.id)"
                     class="block text-center bg-gray-50 hover:bg-gray-100 text-gray-600 py-2 rounded-lg text-sm font-medium transition-colors min-h-[44px] leading-[44px]"
                 >
-                    රිසිට් පත බලන්න
+                    {{ t('btn.view') }}
                 </Link>
             </div>
         </div>
@@ -138,18 +141,18 @@ const statusClass = {
                 <table class="w-full">
                     <thead>
                         <tr class="text-left text-xs font-semibold text-gray-500 uppercase tracking-wider bg-gray-50 border-b border-gray-100">
-                            <th class="px-4 py-3">ඉන්වොයිස් අංකය</th>
-                            <th class="px-4 py-3">පාරිභෝගිකයා</th>
-                            <th class="px-4 py-3">මුළු මුදල</th>
-                            <th class="px-4 py-3">තත්ත්වය</th>
-                            <th class="px-4 py-3">කැශියර්</th>
-                            <th class="px-4 py-3">දිනය</th>
-                            <th class="px-4 py-3 text-right">ක්‍රියා</th>
+                            <th class="px-4 py-3">{{ t('th.invoice') }}</th>
+                            <th class="px-4 py-3">{{ t('lbl.customer') }}</th>
+                            <th class="px-4 py-3">{{ t('th.total') }}</th>
+                            <th class="px-4 py-3">{{ t('th.status') }}</th>
+                            <th class="px-4 py-3">{{ t('lbl.cashier') }}</th>
+                            <th class="px-4 py-3">{{ t('th.date') }}</th>
+                            <th class="px-4 py-3 text-right">{{ t('th.actions') }}</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-gray-100">
                         <tr v-if="sales.data?.length === 0">
-                            <td colspan="7" class="px-4 py-8 text-center text-gray-400">විකුණුම් නොමැත</td>
+                            <td colspan="7" class="px-4 py-8 text-center text-gray-400">{{ t('lbl.no_data') }}</td>
                         </tr>
                         <tr
                             v-for="sale in sales.data"
@@ -157,7 +160,7 @@ const statusClass = {
                             class="hover:bg-gray-50 transition-colors"
                         >
                             <td class="px-4 py-3 font-medium text-blue-600">{{ sale.invoice_no }}</td>
-                            <td class="px-4 py-3 text-gray-600">{{ sale.customer?.name || 'සාමාන්‍ය' }}</td>
+                            <td class="px-4 py-3 text-gray-600">{{ sale.customer?.name || t('lbl.general') }}</td>
                             <td class="px-4 py-3 font-semibold text-green-600">{{ formatCurrency(sale.total) }}</td>
                             <td class="px-4 py-3">
                                 <span
@@ -177,7 +180,7 @@ const statusClass = {
                                     :href="route('sales.show', sale.id)"
                                     class="text-blue-600 hover:text-blue-800 text-sm font-medium px-3 py-1.5 rounded hover:bg-blue-50 min-h-[36px] inline-flex items-center"
                                 >
-                                    බලන්න
+                                    {{ t('btn.view') }}
                                 </Link>
                             </td>
                         </tr>
@@ -185,7 +188,7 @@ const statusClass = {
                     <!-- Total row -->
                     <tfoot v-if="sales.data?.length > 0">
                         <tr class="bg-gray-50 border-t-2 border-gray-200">
-                            <td colspan="2" class="px-4 py-3 font-semibold text-gray-700">මුළු එකතුව</td>
+                            <td colspan="2" class="px-4 py-3 font-semibold text-gray-700">{{ t('lbl.total') }}</td>
                             <td class="px-4 py-3 font-bold text-green-700 text-lg">{{ formatCurrency(grandTotal) }}</td>
                             <td colspan="4"></td>
                         </tr>
@@ -196,7 +199,7 @@ const statusClass = {
 
         <!-- Mobile total -->
         <div v-if="sales.data?.length > 0" class="md:hidden bg-white rounded-xl shadow-sm border border-gray-100 p-4 mb-4 flex justify-between items-center">
-            <span class="font-semibold text-gray-700">මුළු එකතුව</span>
+            <span class="font-semibold text-gray-700">{{ t('lbl.total') }}</span>
             <span class="font-bold text-green-600 text-lg">{{ formatCurrency(grandTotal) }}</span>
         </div>
 

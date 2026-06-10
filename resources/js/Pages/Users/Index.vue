@@ -1,16 +1,13 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { Head, Link, router } from '@inertiajs/vue3';
+import { inject } from 'vue';
+
+const t = inject('t');
 
 const props = defineProps({
     users: { type: Array, default: () => [] },
 });
-
-const roleLabel = {
-    admin: 'ඇඩ්මින්',
-    manager: 'කළමනාකරු',
-    cashier: 'කැශියර්',
-};
 
 const roleClass = {
     admin: 'bg-red-100 text-red-700',
@@ -19,18 +16,18 @@ const roleClass = {
 };
 
 function deleteUser(id) {
-    if (confirm('මෙම පරිශීලකයා මකා දැමීමට ඔබට විශ්වාසද?')) {
+    if (confirm(t('btn.delete') + '?')) {
         router.delete(route('users.destroy', id));
     }
 }
 </script>
 
 <template>
-    <Head title="පරිශීලකයන්" />
+    <Head :title="t('page.users')" />
 
     <AuthenticatedLayout>
         <template #header>
-            <h1 class="text-xl font-bold text-gray-800">පරිශීලකයන්</h1>
+            <h1 class="text-xl font-bold text-gray-800">{{ t('page.users') }}</h1>
         </template>
 
         <div class="flex justify-end mb-4">
@@ -41,14 +38,14 @@ function deleteUser(id) {
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
                 </svg>
-                නව පරිශීලක
+                {{ t('page.new_user') }}
             </Link>
         </div>
 
         <!-- Mobile cards -->
         <div class="md:hidden space-y-3 mb-4">
             <div v-if="users.length === 0" class="bg-white rounded-xl p-6 text-center text-gray-400">
-                පරිශීලකයන් නොමැත
+                {{ t('usr.no_users') }}
             </div>
             <div
                 v-for="user in users"
@@ -67,7 +64,7 @@ function deleteUser(id) {
                         class="text-xs font-medium px-2 py-1 rounded-full flex-shrink-0"
                         :class="roleClass[user.role] || 'bg-gray-100 text-gray-600'"
                     >
-                        {{ roleLabel[user.role] || user.role }}
+                        {{ user.role }}
                     </span>
                 </div>
                 <div class="flex gap-2">
@@ -75,13 +72,13 @@ function deleteUser(id) {
                         :href="route('users.edit', user.id)"
                         class="flex-1 text-center bg-blue-50 hover:bg-blue-100 text-blue-600 py-2 rounded-lg text-sm font-medium transition-colors min-h-[44px] flex items-center justify-center"
                     >
-                        සංස්කරණය
+                        {{ t('btn.edit') }}
                     </Link>
                     <button
                         @click="deleteUser(user.id)"
                         class="flex-1 bg-red-50 hover:bg-red-100 text-red-600 py-2 rounded-lg text-sm font-medium transition-colors min-h-[44px]"
                     >
-                        මකන්න
+                        {{ t('btn.delete') }}
                     </button>
                 </div>
             </div>
@@ -92,15 +89,15 @@ function deleteUser(id) {
             <table class="w-full">
                 <thead>
                     <tr class="text-left text-xs font-semibold text-gray-500 uppercase tracking-wider bg-gray-50 border-b border-gray-100">
-                        <th class="px-4 py-3">පරිශීලකයා</th>
-                        <th class="px-4 py-3">ඊමේල්</th>
-                        <th class="px-4 py-3">භූමිකාව</th>
-                        <th class="px-4 py-3 text-right">ක්‍රියා</th>
+                        <th class="px-4 py-3">{{ t('usr.name') }}</th>
+                        <th class="px-4 py-3">{{ t('usr.email') }}</th>
+                        <th class="px-4 py-3">{{ t('usr.role') }}</th>
+                        <th class="px-4 py-3 text-right">{{ t('th.actions') }}</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-100">
                     <tr v-if="users.length === 0">
-                        <td colspan="4" class="px-4 py-8 text-center text-gray-400">පරිශීලකයන් නොමැත</td>
+                        <td colspan="4" class="px-4 py-8 text-center text-gray-400">{{ t('usr.no_users') }}</td>
                     </tr>
                     <tr
                         v-for="user in users"
@@ -121,7 +118,7 @@ function deleteUser(id) {
                                 class="text-xs font-medium px-2 py-1 rounded-full"
                                 :class="roleClass[user.role] || 'bg-gray-100 text-gray-600'"
                             >
-                                {{ roleLabel[user.role] || user.role }}
+                                {{ user.role }}
                             </span>
                         </td>
                         <td class="px-4 py-3">
@@ -130,13 +127,13 @@ function deleteUser(id) {
                                     :href="route('users.edit', user.id)"
                                     class="text-blue-600 hover:text-blue-800 text-sm font-medium px-3 py-1.5 rounded hover:bg-blue-50 min-h-[36px] flex items-center"
                                 >
-                                    සංස්කරණය
+                                    {{ t('btn.edit') }}
                                 </Link>
                                 <button
                                     @click="deleteUser(user.id)"
                                     class="text-red-600 hover:text-red-800 text-sm font-medium px-3 py-1.5 rounded hover:bg-red-50 min-h-[36px]"
                                 >
-                                    මකන්න
+                                    {{ t('btn.delete') }}
                                 </button>
                             </div>
                         </td>

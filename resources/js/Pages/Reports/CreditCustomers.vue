@@ -1,7 +1,9 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { Head, Link, useForm, usePage } from '@inertiajs/vue3';
-import { ref, computed, watch } from 'vue';
+import { ref, computed, watch, inject } from 'vue';
+
+const t = inject('t');
 
 const props = defineProps({
     customers:   { type: Object, default: () => ({ data: [] }) },
@@ -23,7 +25,6 @@ function fmt(v) {
     return 'Rs. ' + Number(v || 0).toLocaleString('en-LK', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
-// ── Settle modal ──────────────────────────────────────────────────────────────
 const settleModal    = ref(false);
 const settleCustomer = ref(null);
 const settleForm     = useForm({ amount: '' });
@@ -37,24 +38,22 @@ function openSettle(customer) {
 function submitSettle() {
     settleForm.post(route('customers.settle-credit', settleCustomer.value.id), {
         preserveScroll: true,
-        onSuccess: () => {
-            settleForm.reset();
-        },
+        onSuccess: () => { settleForm.reset(); },
     });
 }
 </script>
 
 <template>
-    <Head title="ණය පාරිභෝගිකයන්" />
+    <Head :title="t('rep.credit')" />
     <AuthenticatedLayout>
         <template #header>
             <div class="flex items-center gap-3">
                 <Link :href="route('reports.index')" class="text-slate-400 hover:text-slate-600">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>
                 </Link>
-                <h1 class="text-xl font-bold" style="color:#0F172A;">ණය පාරිභෝගිකයන්</h1>
+                <h1 class="text-xl font-bold" style="color:#0F172A;">{{ t('rep.credit') }}</h1>
                 <span class="ml-auto text-sm font-semibold px-3 py-1 rounded-lg text-white" style="background-color:#DC2626;">
-                    මුළු ණය: {{ fmt(totalCredit) }}
+                    {{ t('credit.total') }}: {{ fmt(totalCredit) }}
                 </span>
             </div>
         </template>
@@ -72,15 +71,15 @@ function submitSettle() {
                 <table class="w-full">
                     <thead>
                         <tr class="text-xs text-slate-500 uppercase" style="background:#F8FAFC; border-bottom:1px solid #E2E8F0;">
-                            <th class="px-4 py-3 text-left">නම</th>
-                            <th class="px-4 py-3 text-left">දුරකථනය</th>
-                            <th class="px-4 py-3 text-right">ණය ශේෂය</th>
-                            <th class="px-4 py-3 text-center w-32">ගෙවීම</th>
+                            <th class="px-4 py-3 text-left">{{ t('th.name') }}</th>
+                            <th class="px-4 py-3 text-left">{{ t('th.phone') }}</th>
+                            <th class="px-4 py-3 text-right">{{ t('th.credit') }}</th>
+                            <th class="px-4 py-3 text-center w-32">{{ t('credit.settle') }}</th>
                         </tr>
                     </thead>
                     <tbody>
                         <tr v-if="customers.data.length === 0">
-                            <td colspan="4" class="px-4 py-8 text-center text-slate-400">ණය පාරිභෝගිකයන් නොමැත</td>
+                            <td colspan="4" class="px-4 py-8 text-center text-slate-400">{{ t('credit.no_credit') }}</td>
                         </tr>
                         <tr v-for="c in customers.data" :key="c.id" class="hover:bg-slate-50" style="border-bottom:1px solid #F1F5F9;">
                             <td class="px-4 py-2.5 font-medium" style="color:#0F172A;">{{ c.name }}</td>
@@ -93,7 +92,7 @@ function submitSettle() {
                                     class="px-3 py-1.5 rounded-lg text-xs font-semibold text-white transition-colors"
                                     style="background-color:#16A34A;"
                                 >
-                                    ගෙවන්න
+                                    {{ t('btn.settle') }}
                                 </button>
                             </td>
                         </tr>
@@ -117,15 +116,15 @@ function submitSettle() {
         <Teleport to="body">
             <div v-if="settleModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
                 <div class="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6 space-y-4">
-                    <h2 class="text-lg font-bold" style="color:#0F172A;">ණය ගෙවීම</h2>
+                    <h2 class="text-lg font-bold" style="color:#0F172A;">{{ t('credit.settle') }}</h2>
 
                     <div class="rounded-xl px-4 py-3 space-y-1" style="background:#FEF2F2; border:1px solid #FECACA;">
                         <p class="text-sm font-semibold" style="color:#0F172A;">{{ settleCustomer?.name }}</p>
-                        <p class="text-xs" style="color:#64748B;">ණය ශේෂය: <span class="font-bold" style="color:#DC2626;">{{ fmt(settleCustomer?.credit_balance) }}</span></p>
+                        <p class="text-xs" style="color:#64748B;">{{ t('th.credit') }}: <span class="font-bold" style="color:#DC2626;">{{ fmt(settleCustomer?.credit_balance) }}</span></p>
                     </div>
 
                     <div>
-                        <label class="block text-sm font-medium mb-1.5" style="color:#334155;">ගෙවන මුදල (Rs.)</label>
+                        <label class="block text-sm font-medium mb-1.5" style="color:#334155;">{{ t('credit.amount') }}</label>
                         <input
                             v-model="settleForm.amount"
                             type="number"
@@ -139,7 +138,6 @@ function submitSettle() {
                         />
                         <p v-if="settleForm.errors.amount" class="text-red-500 text-xs mt-1">{{ settleForm.errors.amount }}</p>
 
-                        <!-- Quick amount buttons -->
                         <div class="flex gap-2 mt-2">
                             <button
                                 v-for="amt in [500, 1000, 2000, 5000]"
@@ -154,7 +152,7 @@ function submitSettle() {
                                 @click="settleForm.amount = settleCustomer?.credit_balance"
                                 class="flex-1 text-xs py-1.5 rounded-lg font-semibold transition-colors"
                                 style="background:#FEF2F2; border:1px solid #FECACA; color:#DC2626;"
-                            >සම්පූර්ණ</button>
+                            >{{ t('credit.full') }}</button>
                         </div>
                     </div>
 
@@ -166,7 +164,7 @@ function submitSettle() {
                             class="flex-1 text-white font-semibold py-3 rounded-xl transition-colors disabled:opacity-50"
                             style="background-color:#16A34A;"
                         >
-                            {{ settleForm.processing ? 'සටහන් කරමින්...' : 'ගෙවීම සටහන් කරන්න' }}
+                            {{ settleForm.processing ? t('credit.processing') : t('credit.confirm') }}
                         </button>
                         <button
                             type="button"
@@ -174,7 +172,7 @@ function submitSettle() {
                             class="flex-1 font-semibold py-3 rounded-xl transition-colors"
                             style="background:#F1F5F9; color:#64748B;"
                         >
-                            ඉවත්වෙන්න 
+                            {{ t('credit.cancel') }}
                         </button>
                     </div>
                 </div>

@@ -22,7 +22,7 @@ return [
     'domains' => [
         // 'shop1.lmucpos.lk' => 'lmuc_pos_shop1',
         // 'shop2.lmucpos.lk' => 'lmuc_pos_shop2',
-        // 'localhost'         => 'lmuc_pos_sinhala',
+        'localhost'         => 'lmuc_pos_sinhala',
     ],
 
 ];

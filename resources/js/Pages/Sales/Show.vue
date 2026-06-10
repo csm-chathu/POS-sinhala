@@ -1,7 +1,10 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { Head, Link } from '@inertiajs/vue3';
-import { computed } from 'vue';
+import { computed, inject } from 'vue';
+
+const t     = inject('t');
+const tBill = inject('tBill');
 
 const props = defineProps({
     sale:     { type: Object, required: true },
@@ -11,11 +14,12 @@ const props = defineProps({
 const shopName    = computed(() => props.settings.shop_name    || 'LUMAC POS');
 const shopAddress = computed(() => props.settings.shop_address || '');
 const shopPhone   = computed(() => props.settings.shop_phone   || '');
-const footer      = computed(() => props.settings.receipt_footer || 'ගෙවීම් සඳහා ස්තූතියි!');
+const footer      = computed(() => props.settings.receipt_footer || '');
 const currency    = computed(() => props.settings.currency     || 'Rs.');
+const logoUrl     = computed(() => props.settings.logo_url     || null);
 
 const paymentLabel = computed(() => {
-    const map = { cash: 'මුදල්', card: 'කාඩ්', qr: 'QR', credit: 'ණය' };
+    const map = { cash: tBill('lbl.cash'), card: tBill('lbl.card'), qr: 'QR', credit: tBill('lbl.credit') };
     return props.sale.payments?.[0]
         ? (map[props.sale.payments[0].method] || props.sale.payments[0].method)
         : '';
@@ -50,7 +54,7 @@ function printReceipt() {
 </script>
 
 <template>
-    <Head :title="`ඉන්වොයිස් ${sale.invoice_no}`" />
+    <Head :title="`${t('lbl.invoice_no')} ${sale.invoice_no}`" />
 
     <AuthenticatedLayout>
         <template #header>
@@ -71,7 +75,7 @@ function printReceipt() {
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
                         </svg>
-                        මුද්‍රණය
+                        {{ t('btn.print') }}
                     </button>
                     <Link
                         :href="route('sales.create')"
@@ -81,7 +85,7 @@ function printReceipt() {
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
                         </svg>
-                        නව විකුණුම්
+                        {{ t('btn.new_sale') }}
                     </Link>
                 </div>
             </div>
@@ -93,6 +97,13 @@ function printReceipt() {
 
                 <!-- Shop header -->
                 <div class="text-center mb-4">
+                    <img
+                        v-if="logoUrl"
+                        :src="logoUrl"
+                        alt="Logo"
+                        class="receipt-logo mx-auto mb-2 object-contain"
+                        style="max-height:64px; max-width:180px;"
+                    />
                     <p class="shop-title font-bold text-[15px]" style="color:#0F172A;">{{ shopName }}</p>
                     <p v-if="shopAddress" class="text-[12px] text-slate-500 mt-0.5">{{ shopAddress }}</p>
                     <p v-if="shopPhone" class="text-[12px] text-slate-500">{{ shopPhone }}</p>
@@ -103,23 +114,23 @@ function printReceipt() {
                 <!-- Invoice meta -->
                 <div class="text-[12px] space-y-1 mb-1" style="color:#334155;">
                     <div class="flex justify-between">
-                        <span>ඉන්වොයිස්</span>
+                        <span>{{ tBill('th.invoice') }}</span>
                         <span class="font-bold">{{ sale.invoice_no }}</span>
                     </div>
                     <div class="flex justify-between">
-                        <span>දිනය</span>
+                        <span>{{ tBill('th.date') }}</span>
                         <span>{{ fmtDate(sale.created_at) }}</span>
                     </div>
                     <div class="flex justify-between">
-                        <span>වේලාව</span>
+                        <span>{{ tBill('th.time') }}</span>
                         <span>{{ fmtTime(sale.created_at) }}</span>
                     </div>
                     <div class="flex justify-between">
-                        <span>කැශියර්</span>
+                        <span>{{ tBill('lbl.cashier') }}</span>
                         <span>{{ sale.user?.name }}</span>
                     </div>
                     <div v-if="sale.customer" class="flex justify-between">
-                        <span>ගනුදෙනුකරු</span>
+                        <span>{{ tBill('lbl.customer') }}</span>
                         <span>{{ sale.customer.name }}</span>
                     </div>
                 </div>
@@ -130,22 +141,29 @@ function printReceipt() {
                 <table class="items-section" style="width:100%; border-collapse:collapse; font-size:12px; color:#334155;">
                     <thead>
                         <tr style="border-bottom:1px solid #E2E8F0;">
-                            <th style="text-align:left; padding:4px 0; font-weight:600; color:#64748B;">භාණ්ඩය</th>
-                            <th style="text-align:center; width:30px; padding:4px 0; font-weight:600; color:#64748B;">ගණ</th>
-                            <th style="text-align:right; width:60px; padding:4px 0; font-weight:600; color:#64748B;">මිල</th>
-                            <th style="text-align:right; width:64px; padding:4px 4px 4px 0; font-weight:600; color:#64748B;">එකතුව</th>
+                            <th style="text-align:left; padding:4px 0; font-weight:600; color:#64748B;">{{ tBill('th.product') }}</th>
+                            <th style="text-align:center; width:30px; padding:4px 0; font-weight:600; color:#64748B;">{{ tBill('th.qty') }}</th>
+                            <th style="text-align:right; width:60px; padding:4px 0; font-weight:600; color:#64748B;">{{ tBill('th.price') }}</th>
+                            <th style="text-align:right; width:64px; padding:4px 4px 4px 0; font-weight:600; color:#64748B;">{{ tBill('lbl.total') }}</th>
                         </tr>
                     </thead>
                     <tbody>
-                        <tr v-for="item in sale.items" :key="item.id" style="border-bottom:1px dashed #F1F5F9;">
-                            <td style="padding:5px 4px 5px 0; word-break:break-word;">
-                                <div>{{ item.product_name }}</div>
-                                <div v-if="item.product?.name_si" style="font-size:11px; color:#64748B;">{{ item.product.name_si }}</div>
-                            </td>
-                            <td style="text-align:center; padding:5px 0;">{{ item.qty }}</td>
-                            <td style="text-align:right; padding:5px 0;">{{ n(item.unit_price) }}</td>
-                            <td style="text-align:right; padding:5px 4px 5px 0; font-weight:500;">{{ n(item.total) }}</td>
-                        </tr>
+                        <template v-for="item in sale.items" :key="item.id">
+                            <tr style="border-bottom:1px dashed #F1F5F9;">
+                                <td style="padding:5px 4px 5px 0; word-break:break-word;">
+                                    <div>{{ item.product_name }}</div>
+                                    <div v-if="item.product?.name_si" style="font-size:11px; color:#64748B;">{{ item.product.name_si }}</div>
+                                </td>
+                                <td style="text-align:center; padding:5px 0;">{{ item.qty }}</td>
+                                <td style="text-align:right; padding:5px 0;">{{ n(item.unit_price) }}</td>
+                                <td style="text-align:right; padding:5px 4px 5px 0; font-weight:500;">{{ n(item.total) }}</td>
+                            </tr>
+                            <tr v-if="Number(item.discount) > 0" style="border-bottom:1px dashed #F1F5F9;">
+                                <td colspan="4" style="padding:0 4px 4px 0; font-size:11px; color:#F59E0B;">
+                                    &nbsp;&nbsp;↳ {{ tBill('lbl.discount') }}: -{{ n(item.discount) }}
+                                </td>
+                            </tr>
+                        </template>
                     </tbody>
                 </table>
 
@@ -154,23 +172,23 @@ function printReceipt() {
                 <!-- Totals -->
                 <div class="space-y-1.5 text-[12px]" style="color:#334155;">
                     <div class="flex justify-between">
-                        <span>අතු ශේෂය</span>
+                        <span>{{ tBill('lbl.subtotal') }}</span>
                         <span>{{ n(sale.subtotal) }}</span>
                     </div>
                     <div v-if="Number(sale.discount) > 0" class="flex justify-between" style="color:#F59E0B;">
-                        <span>වට්ටම</span>
+                        <span>{{ tBill('lbl.discount') }}</span>
                         <span>-{{ n(sale.discount) }}</span>
                     </div>
                     <div class="total-row flex justify-between font-bold text-[15px] pt-1" style="color:#0F172A; border-top:1px solid #E2E8F0;">
-                        <span>මුළු</span>
+                        <span>{{ tBill('lbl.total') }}</span>
                         <span style="color:#2563EB;">{{ currency }} {{ n(sale.total) }}</span>
                     </div>
                     <div class="flex justify-between" style="color:#16A34A;">
-                        <span>ගෙවීම ({{ paymentLabel }})</span>
+                        <span>{{ tBill('th.paid') }} ({{ paymentLabel }})</span>
                         <span class="font-medium">{{ n(sale.payments?.[0]?.amount) }}</span>
                     </div>
                     <div v-if="Number(sale.balance) < 0" class="flex justify-between text-slate-500">
-                        <span>ඉතුරු</span>
+                        <span>{{ tBill('lbl.change') }}</span>
                         <span>{{ n(Math.abs(sale.balance)) }}</span>
                     </div>
                 </div>
@@ -179,7 +197,7 @@ function printReceipt() {
 
                 <!-- Profit -->
                 <div class="flex justify-between text-[12px] font-semibold" style="color:#16A34A;">
-                    <span>ඔබ ලද ලාභය</span>
+                    <span>{{ tBill('rep.profit') }}</span>
                     <span>{{ currency }} {{ n(profit) }}</span>
                 </div>
 
@@ -233,6 +251,11 @@ function printReceipt() {
     #receipt-card .divider {
         border-top: 1px dashed #555 !important;
         margin: 5px 0 !important;
+    }
+
+    #receipt-card .receipt-logo {
+        max-height: 56px !important;
+        max-width: 160px !important;
     }
 
     /* Hide items table on print */

@@ -1,12 +1,14 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { Head, Link, router } from '@inertiajs/vue3';
-import { ref, watch } from 'vue';
+import { ref, watch, inject } from 'vue';
 
 const props = defineProps({
     purchases: { type: Object, default: () => ({ data: [], links: [] }) },
     filters: { type: Object, default: () => ({}) },
 });
+
+const t = inject('t');
 
 const search = ref(props.filters?.search || '');
 const dateFrom = ref(props.filters?.date_from || '');
@@ -35,11 +37,11 @@ function formatDate(dateStr) {
 </script>
 
 <template>
-    <Head title="මිලදී ගැනීම්" />
+    <Head :title="t('page.purchases')" />
 
     <AuthenticatedLayout>
         <template #header>
-            <h1 class="text-xl font-bold text-gray-800">මිලදී ගැනීම්</h1>
+            <h1 class="text-xl font-bold text-gray-800">{{ t('page.purchases') }}</h1>
         </template>
 
         <div class="flex flex-col sm:flex-row gap-3 mb-4">
@@ -50,7 +52,7 @@ function formatDate(dateStr) {
                 <input
                     v-model="search"
                     type="text"
-                    placeholder="GRN අංකය සොයන්න..."
+                    :placeholder="t('pur.grn') + '...'"
                     class="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[44px]"
                 />
             </div>
@@ -71,14 +73,14 @@ function formatDate(dateStr) {
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
                 </svg>
-                නව මිලදී ගැනීම
+                {{ t('btn.new_purchase') }}
             </Link>
         </div>
 
         <!-- Mobile cards -->
         <div class="md:hidden space-y-3 mb-4">
             <div v-if="purchases.data?.length === 0" class="bg-white rounded-xl p-6 text-center text-gray-400">
-                මිලදී ගැනීම් නොමැත
+                {{ t('pur.no_purchases') }}
             </div>
             <div
                 v-for="purchase in purchases.data"
@@ -97,7 +99,7 @@ function formatDate(dateStr) {
                     :href="route('purchases.show', purchase.id)"
                     class="block text-center bg-gray-50 hover:bg-gray-100 text-gray-600 py-2 rounded-lg text-sm font-medium transition-colors min-h-[44px] leading-[44px]"
                 >
-                    බලන්න
+                    {{ t('btn.view') }}
                 </Link>
             </div>
         </div>
@@ -108,17 +110,17 @@ function formatDate(dateStr) {
                 <table class="w-full">
                     <thead>
                         <tr class="text-left text-xs font-semibold text-gray-500 uppercase tracking-wider bg-gray-50 border-b border-gray-100">
-                            <th class="px-4 py-3">GRN අංකය</th>
-                            <th class="px-4 py-3">සැපයුම්කරු</th>
-                            <th class="px-4 py-3">භාණ්ඩ ගණන</th>
-                            <th class="px-4 py-3">මුළු මුදල</th>
-                            <th class="px-4 py-3">දිනය</th>
-                            <th class="px-4 py-3 text-right">ක්‍රියා</th>
+                            <th class="px-4 py-3">{{ t('pur.grn') }}</th>
+                            <th class="px-4 py-3">{{ t('pur.supplier') }}</th>
+                            <th class="px-4 py-3">{{ t('th.qty') }}</th>
+                            <th class="px-4 py-3">{{ t('th.total') }}</th>
+                            <th class="px-4 py-3">{{ t('th.date') }}</th>
+                            <th class="px-4 py-3 text-right">{{ t('th.actions') }}</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-gray-100">
                         <tr v-if="purchases.data?.length === 0">
-                            <td colspan="6" class="px-4 py-8 text-center text-gray-400">මිලදී ගැනීම් නොමැත</td>
+                            <td colspan="6" class="px-4 py-8 text-center text-gray-400">{{ t('pur.no_purchases') }}</td>
                         </tr>
                         <tr
                             v-for="purchase in purchases.data"
@@ -135,7 +137,7 @@ function formatDate(dateStr) {
                                     :href="route('purchases.show', purchase.id)"
                                     class="text-blue-600 hover:text-blue-800 text-sm font-medium px-3 py-1.5 rounded hover:bg-blue-50 min-h-[36px] inline-flex items-center"
                                 >
-                                    බලන්න
+                                    {{ t('btn.view') }}
                                 </Link>
                             </td>
                         </tr>

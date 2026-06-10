@@ -1,6 +1,9 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { Head, Link, useForm } from '@inertiajs/vue3';
+import { inject } from 'vue';
+
+const t = inject('t');
 
 const props = defineProps({
     categories: { type: Array, default: () => [] },
@@ -28,7 +31,7 @@ function submit() {
 </script>
 
 <template>
-    <Head title="නව භාණ්ඩ" />
+    <Head :title="t('page.new_product')" />
 
     <AuthenticatedLayout>
         <template #header>
@@ -38,7 +41,7 @@ function submit() {
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
                     </svg>
                 </Link>
-                <h1 class="text-xl font-bold text-gray-800">නව භාණ්ඩ</h1>
+                <h1 class="text-xl font-bold text-gray-800">{{ t('page.new_product') }}</h1>
             </div>
         </template>
 
@@ -47,13 +50,13 @@ function submit() {
 
                 <!-- Category -->
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">කාණ්ඩය <span class="text-red-500">*</span></label>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">{{ t('prod.category') }} <span class="text-red-500">*</span></label>
                     <select
                         v-model="form.category_id"
                         class="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[44px]"
                         :class="{ 'border-red-500': form.errors.category_id }"
                     >
-                        <option value="">කාණ්ඩයක් තෝරන්න</option>
+                        <option value="">{{ t('prod.category') }}</option>
                         <option v-for="cat in categories" :key="cat.id" :value="cat.id">{{ cat.name }}</option>
                     </select>
                     <p v-if="form.errors.category_id" class="text-red-500 text-xs mt-1">{{ form.errors.category_id }}</p>
@@ -62,7 +65,7 @@ function submit() {
                 <!-- Name -->
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">නම (English) <span class="text-red-500">*</span></label>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">{{ t('prod.name') }} <span class="text-red-500">*</span></label>
                         <input
                             v-model="form.name"
                             type="text"
@@ -73,12 +76,12 @@ function submit() {
                         <p v-if="form.errors.name" class="text-red-500 text-xs mt-1">{{ form.errors.name }}</p>
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">නම (සිංහල)</label>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">{{ t('prod.name_si') }}</label>
                         <input
                             v-model="form.name_si"
                             type="text"
                             class="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[44px]"
-                            placeholder="භාණ්ඩ නම"
+                            :placeholder="t('prod.name_si')"
                         />
                     </div>
                 </div>
@@ -86,7 +89,7 @@ function submit() {
                 <!-- Barcode / SKU -->
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">බාකෝඩ්</label>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">{{ t('prod.barcode') }}</label>
                         <input
                             v-model="form.barcode"
                             type="text"
@@ -109,7 +112,7 @@ function submit() {
                 <!-- Prices -->
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">මිලදී ගැනීමේ මිල (Rs.) <span class="text-red-500">*</span></label>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">{{ t('prod.buy_price') }} <span class="text-red-500">*</span></label>
                         <input
                             v-model="form.cost_price"
                             type="number"
@@ -122,7 +125,7 @@ function submit() {
                         <p v-if="form.errors.cost_price" class="text-red-500 text-xs mt-1">{{ form.errors.cost_price }}</p>
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">විකුණුම් මිල (Rs.) <span class="text-red-500">*</span></label>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">{{ t('prod.sell_price') }} <span class="text-red-500">*</span></label>
                         <input
                             v-model="form.selling_price"
                             type="number"
@@ -135,7 +138,7 @@ function submit() {
                         <p v-if="form.errors.selling_price" class="text-red-500 text-xs mt-1">{{ form.errors.selling_price }}</p>
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">තොග මිල (Rs.)</label>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">{{ t('prod.wholesale_price') }}</label>
                         <input
                             v-model="form.wholesale_price"
                             type="number"
@@ -152,7 +155,7 @@ function submit() {
                 <!-- Stock -->
                 <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">ආරම්භක තොගය</label>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">{{ t('prod.initial_stock') }}</label>
                         <input
                             v-model="form.stock_qty"
                             type="number"
@@ -161,7 +164,7 @@ function submit() {
                         />
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">අඩු සීමාව</label>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">{{ t('prod.low_stock_alert') }}</label>
                         <input
                             v-model="form.alert_qty"
                             type="number"
@@ -170,7 +173,7 @@ function submit() {
                         />
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">ඒකකය</label>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">{{ t('th.qty') }}</label>
                         <select
                             v-model="form.unit"
                             class="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[44px]"
@@ -189,20 +192,20 @@ function submit() {
 
                 <!-- Description -->
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">විස්තරය</label>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">{{ t('prod.description') }}</label>
                     <textarea
                         v-model="form.description"
                         rows="3"
                         class="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        placeholder="භාණ්ඩ විස්තරය..."
+                        :placeholder="t('prod.description')"
                     ></textarea>
                 </div>
 
                 <!-- Active toggle -->
                 <div class="flex items-center justify-between py-2">
                     <div>
-                        <p class="text-sm font-medium text-gray-700">ක්‍රියාත්මකද?</p>
-                        <p class="text-xs text-gray-400">භාණ්ඩය විකිණීමට ලබා දෙන්නද?</p>
+                        <p class="text-sm font-medium text-gray-700">{{ t('lbl.active') }}</p>
+                        <p class="text-xs text-gray-400">{{ t('prod.add_product') }}</p>
                     </div>
                     <button
                         type="button"
@@ -224,13 +227,13 @@ function submit() {
                         :disabled="form.processing"
                         class="flex-1 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-medium py-3 px-6 rounded-lg transition-colors min-h-[44px]"
                     >
-                        {{ form.processing ? 'සුරකිමින්...' : 'සුරකින්න' }}
+                        {{ form.processing ? t('lbl.loading') : t('btn.save') }}
                     </button>
                     <Link
                         :href="route('products.index')"
                         class="flex-1 text-center bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium py-3 px-6 rounded-lg transition-colors min-h-[44px] flex items-center justify-center"
                     >
-                        ඉවත්වෙන්න  කරන්න
+                        {{ t('btn.cancel') }}
                     </Link>
                 </div>
             </form>

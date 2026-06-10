@@ -1,6 +1,9 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { Head, Link, useForm } from '@inertiajs/vue3';
+import { inject } from 'vue';
+
+const t = inject('t');
 
 const props = defineProps({
     supplier: { type: Object, required: true },
@@ -21,7 +24,7 @@ function submit() {
 </script>
 
 <template>
-    <Head title="සැපයුම්කරු සංස්කරණය" />
+    <Head :title="t('page.suppliers')" />
 
     <AuthenticatedLayout>
         <template #header>
@@ -31,7 +34,7 @@ function submit() {
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
                     </svg>
                 </Link>
-                <h1 class="text-xl font-bold text-gray-800">සැපයුම්කරු සංස්කරණය</h1>
+                <h1 class="text-xl font-bold text-gray-800">{{ t('page.suppliers') }}</h1>
             </div>
         </template>
 
@@ -39,7 +42,7 @@ function submit() {
             <form @submit.prevent="submit" class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 space-y-5">
 
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">නම <span class="text-red-500">*</span></label>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">{{ t('th.name') }} <span class="text-red-500">*</span></label>
                     <input
                         v-model="form.name"
                         type="text"
@@ -50,7 +53,7 @@ function submit() {
                 </div>
 
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">සමාගම</label>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">{{ t('sup.company') }}</label>
                     <input
                         v-model="form.company"
                         type="text"
@@ -60,7 +63,7 @@ function submit() {
 
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">දුරකථනය</label>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">{{ t('th.phone') }}</label>
                         <input
                             v-model="form.phone"
                             type="tel"
@@ -70,7 +73,7 @@ function submit() {
                         <p v-if="form.errors.phone" class="text-red-500 text-xs mt-1">{{ form.errors.phone }}</p>
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">ඊමේල්</label>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">{{ t('th.email') }}</label>
                         <input
                             v-model="form.email"
                             type="email"
@@ -82,7 +85,7 @@ function submit() {
                 </div>
 
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">ලිපිනය</label>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">{{ t('th.address') }}</label>
                     <textarea
                         v-model="form.address"
                         rows="3"
@@ -92,7 +95,7 @@ function submit() {
 
                 <div class="flex items-center justify-between py-2">
                     <div>
-                        <p class="text-sm font-medium text-gray-700">ක්‍රියාත්මකද?</p>
+                        <p class="text-sm font-medium text-gray-700">{{ t('lbl.active') }}</p>
                     </div>
                     <button
                         type="button"
@@ -113,13 +116,13 @@ function submit() {
                         :disabled="form.processing"
                         class="flex-1 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-medium py-3 px-6 rounded-lg transition-colors min-h-[44px]"
                     >
-                        {{ form.processing ? 'සුරකිමින්...' : 'සුරකින්න' }}
+                        {{ form.processing ? t('lbl.loading') : t('btn.save') }}
                     </button>
                     <Link
                         :href="route('suppliers.index')"
                         class="flex-1 text-center bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium py-3 px-6 rounded-lg transition-colors min-h-[44px] flex items-center justify-center"
                     >
-                        ඉවත්වෙන්න  කරන්න
+                        {{ t('btn.cancel') }}
                     </Link>
                 </div>
             </form>

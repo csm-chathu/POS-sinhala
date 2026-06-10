@@ -10,6 +10,8 @@ const props = defineProps({
     popularProducts: { type: Array, default: () => [] },
 });
 
+const t = inject('t');
+
 // ─── Fullscreen ───────────────────────────────────────────────────────────────
 const posFullscreen = inject('posFullscreen');
 
@@ -57,12 +59,55 @@ const selectedCustomer = ref(null);
 const priceMode        = ref('retail'); // 'retail' | 'wholesale'
 const paymentMethod    = ref('cash');
 const cashPaid         = ref('');
+const shakePaid        = ref(false);
 const billDiscount     = ref('');   // bill-level discount (Rs.)
 const discountType     = ref('amount'); // 'amount' | 'percent'
 const holdNote         = ref('');
 const showHoldModal    = ref(false);
 const submitting       = ref(false);
 const errorMsg         = ref('');
+
+// ─── Quick customer add ───────────────────────────────────────────────────────
+const showQuickCustomer  = ref(false);
+const quickCustomerName  = ref('');
+const quickCustomerPhone = ref('');
+const quickCustomerError = ref('');
+const quickSaving        = ref(false);
+const localCustomers     = ref([...props.customers]);
+
+function openQuickCustomer() {
+    quickCustomerName.value  = '';
+    quickCustomerPhone.value = '';
+    quickCustomerError.value = '';
+    showQuickCustomer.value  = true;
+    nextTick(() => document.getElementById('qc-name-input')?.focus());
+}
+
+async function saveQuickCustomer() {
+    quickCustomerError.value = '';
+    if (!quickCustomerName.value.trim()) {
+        quickCustomerError.value = t('cust.name_required');
+        return;
+    }
+    quickSaving.value = true;
+    try {
+        const res = await axios.post(route('customers.quick-store'), {
+            name:  quickCustomerName.value.trim(),
+            phone: quickCustomerPhone.value.trim() || null,
+        });
+        const c = res.data.customer;
+        localCustomers.value.push(c);
+        selectedCustomer.value = c;
+        showQuickCustomer.value = false;
+        refocusSearch();
+    } catch (err) {
+        quickCustomerError.value = err.response?.data?.message
+            || Object.values(err.response?.data?.errors || {})[0]?.[0]
+            || t('err.generic');
+    } finally {
+        quickSaving.value = false;
+    }
+}
 
 // ─── Inertia form ─────────────────────────────────────────────────────────────
 const form = useForm({
@@ -172,17 +217,13 @@ function onSearchEnter(e) {
 
 function setPriceMode(mode) {
     priceMode.value = mode;
-    // Re-price all items already in cart
+    // Re-price all items already in cart using prices stored on each item
     cart.value.forEach(item => {
-        const product = [...props.popularProducts, ...searchResults.value]
-            .find(p => p.id === item.product_id);
-        if (product) {
-            const wsPrice = parseFloat(product.wholesale_price) || 0;
-            item.unit_price = mode === 'wholesale' && wsPrice > 0
-                ? wsPrice
-                : parseFloat(product.selling_price) || 0;
-            recalcLine(item);
-        }
+        const wsPrice = parseFloat(item.wholesale_price) || 0;
+        item.unit_price = mode === 'wholesale' && wsPrice > 0
+            ? wsPrice
+            : parseFloat(item.selling_price) || 0;
+        recalcLine(item);
     });
 }
 
@@ -196,17 +237,15 @@ function addToCart(product) {
     activeIndex.value   = -1;
 
     if (existing) {
-        if (isWeightUnit) {
-            nextTick(() => {
-                const idx = cart.value.indexOf(existing);
-                const inputs = document.querySelectorAll('.cart-qty-input');
-                if (inputs[idx]) { inputs[idx].focus(); inputs[idx].select(); }
-            });
-            return; // skip refocusSearch for weight items
-        } else {
+        if (!isWeightUnit) {
             existing.qty += 1;
             recalcLine(existing);
         }
+        nextTick(() => {
+            const idx = cart.value.indexOf(existing);
+            const inputs = document.querySelectorAll('.cart-qty-input');
+            if (inputs[idx]) { inputs[idx].focus(); inputs[idx].select(); }
+        });
     } else {
         const wsPrice = parseFloat(product.wholesale_price) || 0;
         const unitPrice = priceMode.value === 'wholesale' && wsPrice > 0
@@ -226,18 +265,13 @@ function addToCart(product) {
             unit:            product.unit || 'pcs',
             stock_qty:       product.stock_qty || 0,
         });
-        if (isWeightUnit) {
-            nextTick(() => {
-                const inputs = document.querySelectorAll('.cart-qty-input');
-                const last = inputs[inputs.length - 1];
-                if (last) { last.focus(); last.select(); }
-            });
-            return; // skip refocusSearch for weight items
-        } else {
-            recalcLine(cart.value[cart.value.length - 1]);
-        }
+        if (!isWeightUnit) recalcLine(cart.value[cart.value.length - 1]);
+        nextTick(() => {
+            const inputs = document.querySelectorAll('.cart-qty-input');
+            const last = inputs[inputs.length - 1];
+            if (last) { last.focus(); last.select(); }
+        });
     }
-    refocusSearch();
 }
 
 function recalcLine(item) {
@@ -278,6 +312,9 @@ function selectCustomer(e) {
 // ─── Payment methods ──────────────────────────────────────────────────────────
 function setPaymentMethod(method) {
     paymentMethod.value = method;
+    if (method !== 'credit') {
+        selectedCustomer.value = null;
+    }
     if (method === 'cash') {
         nextTick(() => {
             document.getElementById('cash-paid-input')?.focus();
@@ -288,14 +325,23 @@ function setPaymentMethod(method) {
 // ─── Submit sale ──────────────────────────────────────────────────────────────
 function submitSale() {
     errorMsg.value = '';
-    if (cart.value.length === 0) { errorMsg.value = 'කරත්තය හිස්ය.'; return; }
-    if (total.value <= 0)        { errorMsg.value = 'මුළු මුදල් ශුන්‍ය විය නොහැක.'; return; }
+    if (cart.value.length === 0) { errorMsg.value = t('err.cart_empty'); return; }
+    if (total.value <= 0)        { errorMsg.value = t('err.zero_total'); return; }
     if (paymentMethod.value === 'credit' && !selectedCustomer.value) {
-        errorMsg.value = 'ණය විකුණුමකට ගනුදෙනුකරු අවශ්‍ය.'; return;
+        errorMsg.value = t('err.credit_needs_customer'); return;
     }
     if (paymentMethod.value === 'cash') {
         const paid = parseFloat(cashPaid.value) || 0;
-        if (paid < total.value) { errorMsg.value = 'ගෙවූ මුදල ප්‍රමාණවත් නොවේ.'; return; }
+        if (!paid) {
+            nextTick(() => {
+                const el = document.getElementById('cash-paid-input');
+                if (el) { el.focus(); el.select(); }
+            });
+            shakePaid.value = true;
+            setTimeout(() => { shakePaid.value = false; }, 600);
+            return;
+        }
+        if (paid < total.value) { errorMsg.value = t('err.insufficient_cash'); return; }
     }
     submitting.value = true;
     form.items          = cart.value.map(i => ({
@@ -321,7 +367,7 @@ function submitSale() {
     form.post(route('sales.store'), {
         onError: (errors) => {
             submitting.value = false;
-            errorMsg.value   = Object.values(errors)[0] || 'දෝෂයකි.';
+            errorMsg.value   = Object.values(errors)[0] || t('err.generic');
         },
     });
 }
@@ -411,7 +457,7 @@ function fmt(val) {
 </script>
 
 <template>
-    <Head title="නව විකුණුම" />
+    <Head :title="t('page.new_sale')" />
 
     <AuthenticatedLayout>
         <template #header>
@@ -421,7 +467,7 @@ function fmt(val) {
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
                     </svg>
                 </Link>
-                <h1 class="text-xl font-bold text-gray-800">නව විකුණුම / POS Billing</h1>
+                <h1 class="text-xl font-bold text-gray-800">{{ t('page.new_sale') }} / POS Billing</h1>
                 <!-- Retail / Wholesale toggle -->
                 <div class="ml-auto flex items-center rounded-lg overflow-hidden text-sm font-semibold" style="border:1px solid #E2E8F0;">
                     <button
@@ -431,7 +477,7 @@ function fmt(val) {
                         :style="priceMode === 'retail'
                             ? 'background-color:#2563EB; color:#fff;'
                             : 'background-color:#F8FAFC; color:#64748B;'"
-                    >සිල්ලර</button>
+                    >{{ t('lbl.retail') }}</button>
                     <button
                         type="button"
                         @click="setPriceMode('wholesale')"
@@ -439,7 +485,7 @@ function fmt(val) {
                         :style="priceMode === 'wholesale'
                             ? 'background-color:#16A34A; color:#fff;'
                             : 'background-color:#F8FAFC; color:#64748B;'"
-                    >තොග</button>
+                    >{{ t('lbl.wholesale') }}</button>
                 </div>
 
                 <span class="text-xs text-gray-400 hidden sm:block">F1=Search · F2=Cash · F3=Card · F4=Credit · F5=Hold · F10=Complete</span>
@@ -493,7 +539,7 @@ function fmt(val) {
                             ref="searchInput"
                             v-model="searchQuery"
                             type="text"
-                            placeholder="භාණ්ඩ සොයන්න / Barcode"
+                            :placeholder="t('pos.search_product')"
                             autocomplete="off"
                             class="w-full pl-12 pr-4 py-4 text-lg border-2 border-blue-200 rounded-xl focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 min-h-[60px] font-medium"
                             @focus="onSearchFocus"
@@ -519,7 +565,7 @@ function fmt(val) {
                         >
                             <!-- Header label when showing popular items -->
                             <div v-if="!searchQuery.trim()" class="px-4 py-1.5 bg-gray-50 border-b border-gray-100 text-[11px] font-semibold text-gray-400 uppercase tracking-wider">
-                                ජනප්‍රිය භාණ්ඩ
+                                {{ t('dash.quick_actions') }}
                             </div>
 
                             <button
@@ -541,7 +587,7 @@ function fmt(val) {
                                 <div class="text-right ml-4 flex-shrink-0">
                                     <p class="font-bold" :class="idx === activeIndex ? 'text-white' : 'text-blue-700'">{{ fmt(product.selling_price) }}</p>
                                     <p class="text-xs" :class="idx === activeIndex ? 'text-blue-200' : (product.stock_qty > 0 ? 'text-green-600' : 'text-red-500')">
-                                        තොගය: {{ product.stock_qty }} {{ product.unit }}
+                                        {{ t('th.stock') }}: {{ product.stock_qty }} {{ product.unit }}
                                     </p>
                                 </div>
                             </button>
@@ -557,9 +603,9 @@ function fmt(val) {
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
                             </svg>
-                            ගණකය
+                            {{ t('page.sales') }}
                         </h2>
-                        <span class="text-sm text-gray-500">{{ cart.length }} භාණ්ඩ</span>
+                        <span class="text-sm text-gray-500">{{ cart.length }} {{ t('th.product') }}</span>
                     </div>
 
                     <!-- Empty state -->
@@ -567,8 +613,8 @@ function fmt(val) {
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
                         </svg>
-                        <p class="text-sm">කරත්තය හිස්ය</p>
-                        <p class="text-xs mt-1">භාණ්ඩ සොයා ඇතුළත් කරන්න</p>
+                        <p class="text-sm">{{ t('pos.cart_empty') }}</p>
+                        <p class="text-xs mt-1">{{ t('pos.add_items') }}</p>
                     </div>
 
                     <!-- Cart items table (desktop) -->
@@ -576,11 +622,11 @@ function fmt(val) {
                         <table class="w-full text-sm">
                             <thead class="bg-gray-50 sticky top-0 z-10">
                                 <tr class="text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                                    <th class="px-4 py-2.5 text-left">භාණ්ඩය</th>
-                                    <th class="px-3 py-2.5 text-center w-24">ප්‍රමාණය</th>
-                                    <th class="px-3 py-2.5 text-right w-28">මිල</th>
-                                    <th v-if="canDiscount" class="px-3 py-2.5 text-right w-28">වට්ටම</th>
-                                    <th class="px-3 py-2.5 text-right w-28">මුළු</th>
+                                    <th class="px-4 py-2.5 text-left">{{ t('th.product') }}</th>
+                                    <th class="px-3 py-2.5 text-center w-24">{{ t('th.qty') }}</th>
+                                    <th class="px-3 py-2.5 text-right w-28">{{ t('th.price') }}</th>
+                                    <th v-if="canDiscount" class="px-3 py-2.5 text-right w-28">{{ t('lbl.discount') }}</th>
+                                    <th class="px-3 py-2.5 text-right w-28">{{ t('lbl.total') }}</th>
                                     <th class="px-3 py-2.5 w-10"></th>
                                 </tr>
                             </thead>
@@ -596,15 +642,28 @@ function fmt(val) {
                                         <p class="text-xs text-gray-400 font-mono">{{ item.barcode }}</p>
                                     </td>
                                     <td class="px-3 py-2.5">
-                                        <input
-                                            type="number"
-                                            min="0.01"
-                                            step="0.01"
-                                            :value="item.qty ?? ''"
-                                            :placeholder="['kg','g','l','ml','liter'].includes(item.unit) ? 'kg' : '1'"
-                                            @input="e => updateQty(item, e.target.value)"
-                                            class="cart-qty-input w-20 text-center border border-gray-300 rounded-lg py-1.5 px-2 focus:outline-none focus:ring-2 focus:ring-blue-300 text-sm font-medium"
-                                        />
+                                        <div class="flex items-center gap-1">
+                                            <button
+                                                type="button"
+                                                @click="updateQty(item, (parseFloat(item.qty)||1) - 1)"
+                                                class="w-7 h-7 flex items-center justify-center rounded-md border border-gray-300 text-gray-600 hover:bg-red-50 hover:border-red-300 hover:text-red-600 transition-colors text-base font-bold flex-shrink-0"
+                                            >−</button>
+                                            <input
+                                                type="number"
+                                                min="0.01"
+                                                step="0.01"
+                                                :value="item.qty ?? ''"
+                                                :placeholder="['kg','g','l','ml','liter'].includes(item.unit) ? '0' : '1'"
+                                                @input="e => updateQty(item, e.target.value)"
+                                                @keydown.enter.prevent="refocusSearch()"
+                                                class="cart-qty-input w-14 text-center border border-gray-300 rounded-lg py-1.5 px-1 focus:outline-none focus:ring-2 focus:ring-blue-300 text-sm font-medium"
+                                            />
+                                            <button
+                                                type="button"
+                                                @click="updateQty(item, (parseFloat(item.qty)||0) + 1)"
+                                                class="w-7 h-7 flex items-center justify-center rounded-md border border-gray-300 text-gray-600 hover:bg-green-50 hover:border-green-300 hover:text-green-600 transition-colors text-base font-bold flex-shrink-0"
+                                            >+</button>
+                                        </div>
                                     </td>
                                     <td class="px-3 py-2.5">
                                         <input
@@ -634,7 +693,7 @@ function fmt(val) {
                                             type="button"
                                             @click="removeFromCart(idx)"
                                             class="text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg p-1.5 transition-colors"
-                                            title="ඉවත් කරන්න"
+                                            :title="t('btn.delete')"
                                         >
                                             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -648,9 +707,9 @@ function fmt(val) {
 
                     <!-- Cart footer totals (inline summary) -->
                     <div v-if="cart.length > 0" class="border-t border-gray-100 px-4 py-3 bg-gray-50 flex flex-wrap gap-4 justify-end text-sm">
-                        <span class="text-gray-500">අතු ශේෂය: <strong class="text-gray-800">{{ fmt(subtotal) }}</strong></span>
-                        <span v-if="totalDiscount > 0" class="text-orange-600">වට්ටම: <strong>-{{ fmt(totalDiscount) }}</strong></span>
-                        <span class="text-blue-700 font-bold text-base">ගෙවිය යුතු: {{ fmt(total) }}</span>
+                        <span class="text-gray-500">{{ t('lbl.subtotal') }}: <strong class="text-gray-800">{{ fmt(subtotal) }}</strong></span>
+                        <span v-if="totalDiscount > 0" class="text-orange-600">{{ t('lbl.discount') }}: <strong>-{{ fmt(totalDiscount) }}</strong></span>
+                        <span class="text-blue-700 font-bold text-base">{{ t('lbl.grand_total') }}: {{ fmt(total) }}</span>
                     </div>
                 </div>
             </div>
@@ -660,17 +719,30 @@ function fmt(val) {
             ═══════════════════════════════════════════ -->
             <div class="lg:w-[40%] flex flex-col gap-3">
 
-                <!-- Customer selector -->
-                <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
-                    <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
-                        ලෙඩා / Customer
-                    </label>
+                <!-- Customer selector — only shown for Credit payment -->
+                <div v-if="paymentMethod === 'credit'" class="bg-white rounded-xl shadow-sm border border-red-200 p-4">
+                    <div class="flex items-center justify-between mb-2">
+                        <label class="text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                            {{ t('lbl.customer') }}
+                        </label>
+                        <button
+                            type="button"
+                            @click="openQuickCustomer"
+                            class="flex items-center gap-1 text-xs font-semibold text-blue-600 hover:text-blue-800 hover:bg-blue-50 px-2 py-1 rounded-lg transition-colors"
+                            :title="t('cust.quick_add')"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+                            </svg>
+                            {{ t('cust.quick_add') }}
+                        </button>
+                    </div>
                     <select
                         @change="selectCustomer"
                         class="w-full border border-gray-300 rounded-lg px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 min-h-[48px] bg-white"
                     >
-                        <option value="">සාමාන්‍ය ගනුදෙනුකරු</option>
-                        <option v-for="c in customers" :key="c.id" :value="c.id">
+                        <option value="">{{ t('lbl.select_customer') }}</option>
+                        <option v-for="c in localCustomers" :key="c.id" :value="c.id" :selected="selectedCustomer?.id === c.id">
                             {{ c.name }} {{ c.phone ? `· ${c.phone}` : '' }}
                         </option>
                     </select>
@@ -686,13 +758,13 @@ function fmt(val) {
                 <!-- Totals summary + bill discount -->
                 <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4 space-y-2">
                     <div class="flex justify-between text-sm text-gray-600">
-                        <span>අතු ශේෂය</span>
+                        <span>{{ t('lbl.subtotal') }}</span>
                         <span class="font-medium">{{ fmt(subtotal) }}</span>
                     </div>
 
                     <!-- Bill-level discount row -->
                     <div class="flex items-center gap-2">
-                        <span class="text-sm text-orange-600 flex-shrink-0">වට්ටම</span>
+                        <span class="text-sm text-orange-600 flex-shrink-0">{{ t('lbl.discount') }}</span>
                         <div class="flex flex-1 gap-1">
                             <input
                                 v-model="billDiscount"
@@ -721,22 +793,22 @@ function fmt(val) {
                     </div>
 
                     <div v-if="lineDiscount > 0" class="flex justify-between text-xs text-orange-400">
-                        <span>රේඛා වට්ටම</span>
+                        <span>{{ t('lbl.discount') }}</span>
                         <span>-{{ fmt(lineDiscount) }}</span>
                     </div>
                     <div v-if="tax > 0" class="flex justify-between text-sm text-gray-600">
-                        <span>බදු</span>
+                        <span>{{ t('lbl.tax') }}</span>
                         <span class="font-medium">{{ fmt(tax) }}</span>
                     </div>
                     <div class="border-t border-gray-100 pt-2 flex justify-between items-baseline">
-                        <span class="billing-total-label font-bold text-gray-800">ගෙවිය යුතු</span>
+                        <span class="billing-total-label font-bold text-gray-800">{{ t('lbl.grand_total') }}</span>
                         <span class="billing-total-amount font-bold text-blue-700">{{ fmt(total) }}</span>
                     </div>
                 </div>
 
                 <!-- Payment method buttons -->
                 <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
-                    <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">ගෙවීමේ ක්‍රමය</p>
+                    <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">{{ t('lbl.payment_method') }}</p>
                     <div class="grid grid-cols-3 gap-2">
                         <!-- Cash F2 -->
                         <button
@@ -750,7 +822,7 @@ function fmt(val) {
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
                             </svg>
-                            <span class="text-xs">මුදල් [F2]</span>
+                            <span class="text-xs">{{ t('pos.cash_btn') }} [F2]</span>
                         </button>
 
                         <!-- Card F3 -->
@@ -765,7 +837,7 @@ function fmt(val) {
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
                             </svg>
-                            <span class="text-xs">කාඩ් [F3]</span>
+                            <span class="text-xs">{{ t('pos.card_btn') }} [F3]</span>
                         </button>
 
                         <!-- Credit F4 -->
@@ -780,7 +852,7 @@ function fmt(val) {
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
                             </svg>
-                            <span class="text-xs">ණය [F4]</span>
+                            <span class="text-xs">{{ t('pos.credit_btn') }} [F4]</span>
                         </button>
                     </div>
 
@@ -789,7 +861,7 @@ function fmt(val) {
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                         </svg>
-                        ණය විකුණුමකට ඉහළින් ගනුදෙනුකරු තෝරන්න
+                        {{ t('lbl.credit_warn') }}
                     </div>
                 </div>
 
@@ -797,7 +869,7 @@ function fmt(val) {
                 <div v-if="paymentMethod === 'cash' || paymentMethod === 'credit'" class="bg-white rounded-xl shadow-sm border p-4 space-y-3" :class="paymentMethod === 'credit' ? 'border-red-200' : 'border-green-200'">
                     <div>
                         <label class="block text-sm font-semibold text-gray-700 mb-1.5">
-                            {{ paymentMethod === 'credit' ? 'අත්තිකාරම් (ඇතිනම්)' : 'ගෙවූ මුදල (Amount Paid)' }}
+                            {{ paymentMethod === 'credit' ? t('lbl.optional') : t('lbl.cash_paid') }}
                         </label>
                         <input
                             id="cash-paid-input"
@@ -805,20 +877,23 @@ function fmt(val) {
                             type="number"
                             min="0"
                             step="0.01"
-                            :placeholder="paymentMethod === 'credit' ? '0.00 (optional)' : '0.00'"
+                            :placeholder="paymentMethod === 'credit' ? '0.00' : '0.00'"
                             class="w-full border-2 rounded-xl px-4 py-3 text-xl font-bold focus:outline-none min-h-[56px]"
-                            :class="paymentMethod === 'credit'
-                                ? 'border-red-300 text-red-800 focus:ring-2 focus:ring-red-400 focus:border-red-500'
-                                : 'border-green-300 text-green-800 focus:ring-2 focus:ring-green-400 focus:border-green-500'"
+                            :class="[
+                                shakePaid ? 'shake-field border-red-500 text-red-700' :
+                                    paymentMethod === 'credit'
+                                        ? 'border-red-300 text-red-800 focus:ring-2 focus:ring-red-400 focus:border-red-500'
+                                        : 'border-green-300 text-green-800 focus:ring-2 focus:ring-green-400 focus:border-green-500'
+                            ]"
                         />
                     </div>
                     <div v-if="cashPaid" class="flex items-center justify-between rounded-lg px-4 py-3"
                         :class="balance >= 0 ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'"
                     >
-                        <span class="font-semibold text-sm" :class="balance >= 0 ? 'text-green-700' : 'text-red-700'">ශේෂය</span>
+                        <span class="font-semibold text-sm" :class="balance >= 0 ? 'text-green-700' : 'text-red-700'">{{ t('lbl.change') }}</span>
                         <span class="text-xl font-bold" :class="balance >= 0 ? 'text-green-700' : 'text-red-600'">
                             {{ fmt(Math.abs(balance)) }}
-                            <span class="text-sm font-normal ml-1">{{ balance < 0 ? '(ඉතිරි)' : '(ඉතුරු)' }}</span>
+                            <span class="text-sm font-normal ml-1">{{ balance < 0 ? '(' + t('th.balance') + ')' : '(' + t('lbl.change') + ')' }}</span>
                         </span>
                     </div>
                 </div>
@@ -839,7 +914,7 @@ function fmt(val) {
                             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                             <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
                         </svg>
-                        <span>{{ submitting || form.processing ? 'සකසමින්...' : 'ගෙවීම සම්පූර්ණ කරන්න' }}</span>
+                        <span>{{ submitting || form.processing ? t('lbl.loading') : t('pos.complete_sale') }}</span>
                         <span v-if="!submitting && !form.processing" class="text-sm font-normal opacity-70">[F10]</span>
                     </button>
 
@@ -853,7 +928,7 @@ function fmt(val) {
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
-                        <span>බිල රඳවන්න</span>
+                        <span>{{ t('pos.hold_bill') }}</span>
                         <span class="text-sm font-normal opacity-70">[F5]</span>
                     </button>
 
@@ -864,11 +939,78 @@ function fmt(val) {
                         @click="cart = []; selectedCustomer = null; cashPaid = ''; errorMsg = ''; refocusSearch()"
                         class="w-full text-center text-sm text-gray-400 hover:text-red-500 py-2 transition-colors"
                     >
-                        කරත්තය හිස් කරන්න
+                        {{ t('btn.clear') }}
                     </button>
                 </div>
             </div>
         </div>
+
+        <!-- ══ Quick Customer Modal ══ -->
+        <Teleport to="body">
+            <div v-if="showQuickCustomer" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
+                <div class="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6 space-y-4">
+                    <h2 class="text-lg font-bold text-gray-800 flex items-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+                        </svg>
+                        {{ t('cust.quick_add') }}
+                    </h2>
+
+                    <!-- Name -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">
+                            {{ t('cust.name') }} <span class="text-red-500">*</span>
+                        </label>
+                        <input
+                            id="qc-name-input"
+                            v-model="quickCustomerName"
+                            type="text"
+                            class="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 min-h-[44px]"
+                            :placeholder="t('cust.name')"
+                            @keydown.enter.prevent="saveQuickCustomer"
+                        />
+                    </div>
+
+                    <!-- Phone -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">
+                            {{ t('cust.phone') }}
+                        </label>
+                        <input
+                            v-model="quickCustomerPhone"
+                            type="tel"
+                            class="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 min-h-[44px]"
+                            :placeholder="t('cust.phone')"
+                            @keydown.enter.prevent="saveQuickCustomer"
+                        />
+                    </div>
+
+                    <!-- Error -->
+                    <p v-if="quickCustomerError" class="text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2">
+                        {{ quickCustomerError }}
+                    </p>
+
+                    <!-- Actions -->
+                    <div class="flex gap-3 pt-1">
+                        <button
+                            type="button"
+                            @click="saveQuickCustomer"
+                            :disabled="quickSaving"
+                            class="flex-1 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-semibold py-3 rounded-xl transition-colors min-h-[48px]"
+                        >
+                            {{ quickSaving ? t('lbl.saving') : t('btn.save') }}
+                        </button>
+                        <button
+                            type="button"
+                            @click="showQuickCustomer = false"
+                            class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-3 rounded-xl transition-colors min-h-[48px]"
+                        >
+                            {{ t('btn.cancel') }}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </Teleport>
 
         <!-- ══ Hold Bill Modal ══ -->
         <Teleport to="body">
@@ -878,15 +1020,15 @@ function fmt(val) {
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
-                        බිල රඳවන්න
+                        {{ t('pos.hold_bill') }}
                     </h2>
-                    <p class="text-sm text-gray-500">{{ cart.length }} භාණ්ඩ ({{ fmt(total) }}) රඳවනු ලැබේ.</p>
+                    <p class="text-sm text-gray-500">{{ cart.length }} {{ t('th.product') }} ({{ fmt(total) }})</p>
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">සටහන (ऐच्छिक)</label>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">{{ t('lbl.note') }} ({{ t('lbl.optional') }})</label>
                         <input
                             v-model="holdNote"
                             type="text"
-                            placeholder="ගනුදෙනුකරු / හේතු..."
+                            :placeholder="t('pos.hold_note')"
                             class="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400 min-h-[44px]"
                         />
                     </div>
@@ -896,14 +1038,14 @@ function fmt(val) {
                             @click="confirmHold"
                             class="flex-1 bg-amber-500 hover:bg-amber-600 text-white font-semibold py-3 rounded-xl transition-colors min-h-[48px]"
                         >
-                            රඳවන්න
+                            {{ t('btn.hold') }}
                         </button>
                         <button
                             type="button"
                             @click="showHoldModal = false"
                             class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-3 rounded-xl transition-colors min-h-[48px]"
                         >
-                            ඉවත්වෙන්න 
+                            {{ t('btn.cancel') }}
                         </button>
                     </div>
                 </div>
@@ -911,3 +1053,18 @@ function fmt(val) {
         </Teleport>
     </AuthenticatedLayout>
 </template>
+
+<style scoped>
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    15%       { transform: translateX(-8px); }
+    30%       { transform: translateX(8px); }
+    45%       { transform: translateX(-6px); }
+    60%       { transform: translateX(6px); }
+    75%       { transform: translateX(-4px); }
+    90%       { transform: translateX(4px); }
+}
+.shake-field {
+    animation: shake 0.55s ease;
+}
+</style>

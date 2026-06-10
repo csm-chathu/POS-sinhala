@@ -1,7 +1,9 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { Head, Link, useForm } from '@inertiajs/vue3';
-import { ref } from 'vue';
+import { inject, ref } from 'vue';
+
+const t = inject('t');
 
 const props = defineProps({
     user: { type: Object, required: true },
@@ -23,7 +25,7 @@ function submit() {
 </script>
 
 <template>
-    <Head title="පරිශීලක සංස්කරණය" />
+    <Head :title="t('page.edit_user')" />
 
     <AuthenticatedLayout>
         <template #header>
@@ -33,7 +35,7 @@ function submit() {
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
                     </svg>
                 </Link>
-                <h1 class="text-xl font-bold text-gray-800">පරිශීලක සංස්කරණය</h1>
+                <h1 class="text-xl font-bold text-gray-800">{{ t('page.edit_user') }}</h1>
             </div>
         </template>
 
@@ -41,7 +43,7 @@ function submit() {
             <form @submit.prevent="submit" class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 space-y-5">
 
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">නම <span class="text-red-500">*</span></label>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">{{ t('usr.full_name') }} <span class="text-red-500">*</span></label>
                     <input
                         v-model="form.name"
                         type="text"
@@ -52,7 +54,7 @@ function submit() {
                 </div>
 
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">ඊමේල් <span class="text-red-500">*</span></label>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">{{ t('th.email') }} <span class="text-red-500">*</span></label>
                     <input
                         v-model="form.email"
                         type="email"
@@ -63,11 +65,11 @@ function submit() {
                 </div>
 
                 <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
-                    <p class="text-xs text-yellow-700">රහස් වචනය වෙනස් කිරීමට අවශ්‍ය නම් පමණක් පුරවන්න. හිස් ව ඇත්නම් වෙනස් නොවේ.</p>
+                    <p class="text-xs text-yellow-700">{{ t('usr.password_note') }}</p>
                 </div>
 
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">නව රහස් වචනය</label>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">{{ t('usr.new_password') }}</label>
                     <div class="relative">
                         <input
                             v-model="form.password"
@@ -93,7 +95,7 @@ function submit() {
                 </div>
 
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">රහස් වචනය තහවුරු කරන්න</label>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">{{ t('usr.password_confirm') }}</label>
                     <input
                         v-model="form.password_confirmation"
                         :type="showPassword ? 'text' : 'password'"
@@ -103,15 +105,15 @@ function submit() {
                 </div>
 
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">භූමිකාව <span class="text-red-500">*</span></label>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">{{ t('usr.role') }} <span class="text-red-500">*</span></label>
                     <select
                         v-model="form.role"
                         class="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[44px]"
                         :class="{ 'border-red-500': form.errors.role }"
                     >
-                        <option value="cashier">කැශියර්</option>
-                        <option value="manager">කළමනාකරු</option>
-                        <option value="admin">ඇඩ්මින්</option>
+                        <option value="cashier">{{ t('usr.cashier') }}</option>
+                        <option value="manager">{{ t('usr.manager') }}</option>
+                        <option value="admin">{{ t('usr.admin') }}</option>
                     </select>
                     <p v-if="form.errors.role" class="text-red-500 text-xs mt-1">{{ form.errors.role }}</p>
                 </div>
@@ -122,13 +124,13 @@ function submit() {
                         :disabled="form.processing"
                         class="flex-1 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-medium py-3 px-6 rounded-lg transition-colors min-h-[44px]"
                     >
-                        {{ form.processing ? 'සුරකිමින්...' : 'සුරකින්න' }}
+                        {{ form.processing ? t('lbl.saving') : t('btn.save') }}
                     </button>
                     <Link
                         :href="route('users.index')"
                         class="flex-1 text-center bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium py-3 px-6 rounded-lg transition-colors min-h-[44px] flex items-center justify-center"
                     >
-                        ඉවත්වෙන්න  කරන්න
+                        {{ t('lbl.go_back') }}
                     </Link>
                 </div>
             </form>

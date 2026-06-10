@@ -174,4 +174,25 @@ class CustomerController extends Controller
 
         return back()->with('success', 'Rs. ' . number_format($request->amount, 2) . ' ණය ගෙවීම සටහන් කෙරිණ.');
     }
+
+    /**
+     * Quick customer creation from POS — returns JSON.
+     */
+    public function quickStore(Request $request)
+    {
+        $validated = $request->validate([
+            'name'  => 'required|string|max:255',
+            'phone' => 'nullable|string|max:50',
+        ]);
+
+        $customer = Customer::create([
+            'name'   => $validated['name'],
+            'phone'  => $validated['phone'] ?? null,
+            'active' => true,
+        ]);
+
+        return response()->json([
+            'customer' => $customer->only(['id', 'name', 'phone', 'credit_balance']),
+        ], 201);
+    }
 }

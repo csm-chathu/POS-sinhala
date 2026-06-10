@@ -1,6 +1,9 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { Head, Link } from '@inertiajs/vue3';
+import { inject } from 'vue';
+
+const t = inject('t');
 
 const props = defineProps({
     todaySales: { type: Number, default: 0 },
@@ -28,8 +31,7 @@ function formatDate(dateStr) {
 
 const statCards = [
     {
-        label: 'අද විකුණුම්',
-        sublabel: "Today's Sales",
+        labelKey: 'dash.today_sales',
         valueKey: 'todaySales',
         isCurrency: true,
         bg: 'bg-green-500',
@@ -38,8 +40,7 @@ const statCards = [
         icon: `<svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>`,
     },
     {
-        label: 'මාසික විකුණුම්',
-        sublabel: 'Monthly Sales',
+        labelKey: 'dash.month_sales',
         valueKey: 'monthSales',
         isCurrency: true,
         bg: 'bg-blue-500',
@@ -48,8 +49,7 @@ const statCards = [
         icon: `<svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>`,
     },
     {
-        label: 'භාණ්ඩ',
-        sublabel: 'Total Products',
+        labelKey: 'dash.total_products',
         valueKey: 'totalProducts',
         isCurrency: false,
         bg: 'bg-purple-500',
@@ -58,8 +58,7 @@ const statCards = [
         icon: `<svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" /></svg>`,
     },
     {
-        label: 'අඩු තොග',
-        sublabel: 'Low Stock Items',
+        labelKey: 'dash.low_stock',
         valueKey: 'lowStockCount',
         isCurrency: false,
         bg: 'bg-red-500',
@@ -71,11 +70,11 @@ const statCards = [
 </script>
 
 <template>
-    <Head title="මුල් පිටුව" />
+    <Head :title="t('page.dashboard')" />
 
     <AuthenticatedLayout>
         <template #header>
-            <h1 class="text-xl font-bold text-gray-800">මුල් පිටුව</h1>
+            <h1 class="text-xl font-bold text-gray-800">{{ t('page.dashboard') }}</h1>
         </template>
 
         <!-- Stat Cards -->
@@ -100,8 +99,7 @@ const statCards = [
                                 {{ props[card.valueKey] }}
                             </template>
                         </p>
-                        <p class="stat-card-label font-semibold text-gray-700 mt-1">{{ card.label }}</p>
-                        <p class="text-xs text-gray-400">{{ card.sublabel }}</p>
+                        <p class="stat-card-label font-semibold text-gray-700 mt-1">{{ t(card.labelKey) }}</p>
                     </div>
                 </div>
             </div>
@@ -119,7 +117,7 @@ const statCards = [
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
                 </svg>
-                <span class="text-sm font-medium">නව විකුණුම්</span>
+                <span class="text-sm font-medium">{{ t('btn.new_sale') }}</span>
             </Link>
             <Link
                 :href="route('products.create')"
@@ -128,7 +126,7 @@ const statCards = [
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
                 </svg>
-                <span class="text-sm font-medium">නව භාණ්ඩ</span>
+                <span class="text-sm font-medium">{{ t('btn.new_product') }}</span>
             </Link>
             <Link
                 :href="route('purchases.create')"
@@ -140,7 +138,7 @@ const statCards = [
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
                 </svg>
-                <span class="text-sm font-medium">නව මිලදී ගැනීම</span>
+                <span class="text-sm font-medium">{{ t('btn.new_purchase') }}</span>
             </Link>
             <Link
                 :href="route('reports.index')"
@@ -152,21 +150,21 @@ const statCards = [
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                 </svg>
-                <span class="text-sm font-medium">වාර්තා</span>
+                <span class="text-sm font-medium">{{ t('btn.report') }}</span>
             </Link>
         </div>
 
         <!-- Recent Sales Table -->
         <div class="bg-white rounded-xl shadow-sm border border-gray-100">
             <div class="flex items-center justify-between px-4 py-3 border-b border-gray-100">
-                <h2 class="font-semibold text-gray-800">මෑත විකුණුම්</h2>
-                <Link :href="route('sales.index')" class="text-sm hover:underline" style="color:#2563EB;">සියල්ල බලන්න</Link>
+                <h2 class="font-semibold text-gray-800">{{ t('dash.recent_sales') }}</h2>
+                <Link :href="route('sales.index')" class="text-sm hover:underline" style="color:#2563EB;">{{ t('dash.view_all') }}</Link>
             </div>
 
             <!-- Mobile card view -->
             <div class="md:hidden divide-y divide-gray-100">
                 <div v-if="recentSales.length === 0" class="p-6 text-center text-gray-400">
-                    <p>විකුණුම් නොමැත</p>
+                    <p>{{ t('dash.no_sales') }}</p>
                 </div>
                 <div
                     v-for="sale in recentSales"
@@ -191,15 +189,15 @@ const statCards = [
                 <table class="w-full">
                     <thead>
                         <tr class="text-left text-xs font-semibold text-gray-500 uppercase tracking-wider bg-gray-50">
-                            <th class="px-4 py-3">ඉන්වොයිස් අංකය</th>
-                            <th class="px-4 py-3">කැශියර්</th>
-                            <th class="px-4 py-3">මුදල</th>
-                            <th class="px-4 py-3">වේලාව</th>
+                            <th class="px-4 py-3">{{ t('th.invoice') }}</th>
+                            <th class="px-4 py-3">{{ t('th.cashier') }}</th>
+                            <th class="px-4 py-3">{{ t('th.total') }}</th>
+                            <th class="px-4 py-3">{{ t('th.time') }}</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-gray-100">
                         <tr v-if="recentSales.length === 0">
-                            <td colspan="4" class="px-4 py-8 text-center text-gray-400">විකුණුම් නොමැත</td>
+                            <td colspan="4" class="px-4 py-8 text-center text-gray-400">{{ t('dash.no_sales') }}</td>
                         </tr>
                         <tr
                             v-for="sale in recentSales"
