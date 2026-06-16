@@ -137,6 +137,45 @@ function save() {
         forceFormData:  true,
     });
 }
+
+// Database import / export (Electron only)
+const dbStatus = ref(null);
+const dbBusy   = ref(false);
+let dbStatusTimer = null;
+
+function setDbStatus(type, message) {
+    dbStatus.value = { type, message };
+    clearTimeout(dbStatusTimer);
+    dbStatusTimer = setTimeout(() => { dbStatus.value = null; }, 3500);
+}
+
+async function exportDb() {
+    dbBusy.value = true;
+    try {
+        const result = await electronAPI?.exportDatabase();
+        if (result?.success)        setDbStatus('success', 'Database exported successfully');
+        else if (!result?.cancelled) setDbStatus('error', result?.error || 'Export failed');
+    } finally { dbBusy.value = false; }
+}
+
+async function importDb() {
+    if (!confirm('This will REPLACE the current database with the backup. All current data will be lost. Continue?')) return;
+    dbBusy.value = true;
+    try {
+        const result = await electronAPI?.importDatabase();
+        if (result?.success)        setDbStatus('success', 'Database imported and migrated successfully');
+        else if (!result?.cancelled) setDbStatus('error', result?.error || 'Import failed');
+    } finally { dbBusy.value = false; }
+}
+
+async function runMigrations() {
+    dbBusy.value = true;
+    try {
+        const result = await electronAPI?.runMigrations();
+        if (result?.success) setDbStatus('success', 'Migrations completed successfully');
+        else                 setDbStatus('error', result?.error || 'Migration failed');
+    } finally { dbBusy.value = false; }
+}
 </script>
 
 <template>
@@ -430,6 +469,56 @@ function save() {
                     </svg>
                     Enter New Key
                 </button>
+            </div>
+
+            <!-- Database backup / restore (Electron only) -->
+            <div v-if="isElectron" class="mt-5 p-4 rounded-xl" style="background:#F8FAFC; border:1px solid #E2E8F0;">
+                <h3 class="text-sm font-semibold mb-1" style="color:#334155;">🗄 Database</h3>
+                <p class="text-xs mb-3" style="color:#94A3B8;">Export a backup of your data, restore from a previous backup, or run pending migrations.</p>
+                <div class="flex flex-wrap items-center gap-2">
+                    <button
+                        type="button"
+                        :disabled="dbBusy"
+                        @click="exportDb"
+                        class="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold text-white"
+                        style="background:#16A34A;"
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                        </svg>
+                        Export Backup
+                    </button>
+                    <button
+                        type="button"
+                        :disabled="dbBusy"
+                        @click="importDb"
+                        class="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold text-white"
+                        style="background:#D97706;"
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l4-4m0 0l4 4m-4-4v12" />
+                        </svg>
+                        Import Backup
+                    </button>
+                    <button
+                        type="button"
+                        :disabled="dbBusy"
+                        @click="runMigrations"
+                        class="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold"
+                        style="background:#E2E8F0; color:#475569;"
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                        </svg>
+                        Run Migrations
+                    </button>
+                </div>
+                <div v-if="dbBusy" class="mt-2 text-xs" style="color:#64748B;">Processing…</div>
+                <div
+                    v-if="dbStatus"
+                    class="mt-2 text-xs font-semibold px-3 py-2 rounded-lg"
+                    :style="dbStatus.type === 'success' ? 'background:#F0FDF4; color:#16A34A;' : 'background:#FEF2F2; color:#DC2626;'"
+                >{{ dbStatus.message }}</div>
             </div>
 
             <!-- Save button — full width below both columns -->

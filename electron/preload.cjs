@@ -22,4 +22,13 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
     /** Open the license key change dialog from within the app */
     changeLicenseKey: () => ipcRenderer.invoke('activation:change-key'),
+
+    /** Export SQLite database to a user-chosen file */
+    exportDatabase: () => ipcRenderer.invoke('db:export'),
+
+    /** Import a SQLite backup file and run migrations */
+    importDatabase: () => ipcRenderer.invoke('db:import'),
+
+    /** Run Laravel migrations on the current database */
+    runMigrations: () => ipcRenderer.invoke('db:migrate'),
 });

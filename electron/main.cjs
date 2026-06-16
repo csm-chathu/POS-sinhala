@@ -1,4 +1,4 @@
-const { app, BrowserWindow, shell, Menu, ipcMain, globalShortcut } = require('electron');
+const { app, BrowserWindow, shell, Menu, ipcMain, globalShortcut, dialog } = require('electron');
 const { spawn, execFileSync }  = require('child_process');
 const path    = require('path');
 const http    = require('http');
@@ -520,6 +520,63 @@ ipcMain.handle('print-receipt', async (event, printerName, options = {}) => {
       }
     });
   });
+});
+
+// ─── IPC: database export ─────────────────────────────────────────────────────
+ipcMain.handle('db:export', async () => {
+  const dbPath = path.join(PROJECT_DIR, 'database', 'database.sqlite');
+  if (!fs.existsSync(dbPath)) return { success: false, error: 'Database file not found' };
+
+  const { filePath, canceled } = await dialog.showSaveDialog(mainWindow, {
+    title: 'Export Database Backup',
+    defaultPath: `lmuc-pos-backup-${new Date().toISOString().slice(0, 10)}.sqlite`,
+    filters: [{ name: 'SQLite Database', extensions: ['sqlite', 'db'] }],
+  });
+
+  if (canceled || !filePath) return { success: false, cancelled: true };
+
+  try {
+    fs.copyFileSync(dbPath, filePath);
+    return { success: true, path: filePath };
+  } catch (err) {
+    return { success: false, error: err.message };
+  }
+});
+
+// ─── IPC: database import ─────────────────────────────────────────────────────
+ipcMain.handle('db:import', async () => {
+  const dbPath = path.join(PROJECT_DIR, 'database', 'database.sqlite');
+
+  const { filePaths, canceled } = await dialog.showOpenDialog(mainWindow, {
+    title: 'Import Database Backup',
+    filters: [{ name: 'SQLite Database', extensions: ['sqlite', 'db'] }],
+    properties: ['openFile'],
+  });
+
+  if (canceled || !filePaths?.length) return { success: false, cancelled: true };
+
+  try {
+    fs.copyFileSync(filePaths[0], dbPath);
+    // Run migrations so any new tables are created on the restored DB
+    try {
+      execFileSync(PHP_EXE, ['artisan', 'migrate', '--force'], { cwd: PROJECT_DIR, windowsHide: true });
+    } catch (e) {
+      console.error('[db:import] migrate failed:', e.message);
+    }
+    return { success: true };
+  } catch (err) {
+    return { success: false, error: err.message };
+  }
+});
+
+// ─── IPC: run migrations ──────────────────────────────────────────────────────
+ipcMain.handle('db:migrate', () => {
+  try {
+    execFileSync(PHP_EXE, ['artisan', 'migrate', '--force'], { cwd: PROJECT_DIR, windowsHide: true });
+    return { success: true };
+  } catch (err) {
+    return { success: false, error: err.message };
+  }
 });
 
 app.whenReady().then(async () => {
