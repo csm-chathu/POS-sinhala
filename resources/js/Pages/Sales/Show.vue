@@ -2,7 +2,7 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { Head, Link } from '@inertiajs/vue3';
 import { router } from '@inertiajs/vue3';
-import { computed, inject, onMounted } from 'vue';
+import { ref, computed, inject, onMounted } from 'vue';
 
 const t     = inject('t');
 const tBill = inject('tBill');
