@@ -25,7 +25,6 @@ return [
         'asitha-pos.lumac.lk' => database_path('asitha.sqlite'),
 
         
-add
     ],
 
 ];
