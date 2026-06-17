@@ -188,6 +188,8 @@ const sizePickerProduct = ref(null);
 const showSizePicker    = ref(false);
 const sizeActiveIndex   = ref(0);
 
+let blockNextDropdownOpen = false; // prevents dropdown reopening after outside click
+
 function selectSize(size) {
     const p = sizePickerProduct.value;
     showSizePicker.value    = false;
@@ -230,7 +232,8 @@ function resetScanState() {
 
 // ─── Product search ───────────────────────────────────────────────────────────
 function onSearchFocus() {
-    activeIndex.value  = -1;
+    activeIndex.value = -1;
+    if (blockNextDropdownOpen) { blockNextDropdownOpen = false; return; }
     showDropdown.value = dropdownItems.value.length > 0;
 }
 
@@ -590,8 +593,9 @@ async function loadAllProducts() {
 
 function handleOutsideClick(e) {
     if (searchContainer.value && !searchContainer.value.contains(e.target)) {
-        showDropdown.value = false;
-        activeIndex.value  = -1;
+        showDropdown.value    = false;
+        activeIndex.value     = -1;
+        blockNextDropdownOpen = true;
     }
 }
 

@@ -201,6 +201,7 @@ class SaleController extends Controller
                 if ($variant) {
                     $stockBefore = $variant->stock_qty;
                     $variant->decrement('stock_qty', $item['qty']);
+                    $product->decrement('stock_qty', $item['qty']);
                 } else {
                     $stockBefore = $product->stock_qty;
                     $product->decrement('stock_qty', $item['qty']);
