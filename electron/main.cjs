@@ -9,7 +9,7 @@ const APP_URL  = `http://127.0.0.1:${APP_PORT}`;
 
 // Live URL: --live-url=https://... arg, or LIVE_URL env var, or empty (use local PHP)
 // const LIVE_URL = 'https://pos.lumac.lk';
-const LIVE_URL = 'https://asitha-pos.lumac.lk';
+const LIVE_URL = 'https://mailagas.lumac.lk/';
 
 // ── Paths ──────────────────────────────────────────────────────────────────────
 const IS_PACKAGED   = app.isPackaged;
