@@ -148,9 +148,9 @@ onMounted(async () => {
                         class="receipt-logo mx-auto mb-2 object-contain"
                         style="max-height:64px; max-width:180px;"
                     />
-                    <p class="shop-title font-extrabold" style="font-size:16px; color:#0F172A; letter-spacing:0.01em;">{{ shopName }}</p>
-                    <p v-if="shopAddress" class="font-bold" style="font-size:16px; color:#0F172A;">{{ shopAddress }}</p>
-                    <p v-if="shopPhone" class="font-bold" style="font-size:16px; color:#0F172A;">{{ shopPhone }}</p>
+                    <p class="shop-title font-extrabold" style="font-size:17px; color:#0F172A; letter-spacing:0.01em;">{{ shopName }}</p>
+                    <p v-if="shopAddress" class="font-bold" style="font-size:17px; color:#0F172A;">{{ shopAddress }}</p>
+                    <p v-if="shopPhone" class="font-bold" style="font-size:17px; color:#0F172A;">{{ shopPhone }}</p>
                 </div>
 
                 <div class="divider" style="border-top:1px solid #CBD5E1; margin:10px 0;"></div>
@@ -163,11 +163,7 @@ onMounted(async () => {
                     </tr>
                     <tr>
                         <td class="meta-label">{{ tBill('th.date') }}</td>
-                        <td class="meta-value">{{ fmtDate(sale.created_at) }}</td>
-                    </tr>
-                    <tr>
-                        <td class="meta-label">{{ tBill('th.time') }}</td>
-                        <td class="meta-value">{{ fmtTime(sale.created_at) }}</td>
+                        <td class="meta-value">{{ fmtDate(sale.created_at) }} {{ fmtTime(sale.created_at) }}</td>
                     </tr>
                     <tr>
                         <td class="meta-label">{{ tBill('lbl.cashier') }}</td>
@@ -182,7 +178,7 @@ onMounted(async () => {
                 <div class="items-section divider" style="border-top:1px solid #CBD5E1; margin:10px 0;"></div>
 
                 <!-- Items -->
-                <table class="items-section" style="width:100%; table-layout:fixed; border-collapse:collapse; font-size:12px; line-height:2; color:#0F172A; font-weight:800;">
+                <table class="items-section" style="width:100%; table-layout:fixed; border-collapse:collapse; font-size:13px; line-height:2; color:#0F172A; font-weight:800;">
                     <thead>
                         <tr style="border-top:2px solid #0F172A; border-bottom:2px solid #0F172A;">
                             <th style="text-align:left; width:12px; padding:2px 2px 2px 0; font-weight:800;">#</th>
@@ -366,7 +362,7 @@ onMounted(async () => {
     }
 
     #receipt-card .shop-title {
-        font-size: 16px !important;
+        font-size: 17px !important;
         font-weight: 800 !important;
     }
 
