@@ -92,17 +92,9 @@ const modalBarcodeSvg = ref(null);
 const printBarcodeSvg = ref(null);
 const printing        = ref(false);
 
-const LABEL_SIZES = {
-    '20x30': { w: '20mm', h: '30mm' },
-    '40x25': { w: '40mm', h: '25mm' },
-    '50x30': { w: '50mm', h: '30mm' },
-    '58x40': { w: '58mm', h: '40mm' },
-};
-
 const appSettings  = computed(() => usePage().props.appSettings || {});
-const labelSize    = computed(() => appSettings.value.barcode_label_size || '40x25');
 const showPrice    = computed(() => appSettings.value.barcode_show_price !== '0' && appSettings.value.barcode_show_price !== false);
-const currentSize  = computed(() => LABEL_SIZES[labelSize.value] || LABEL_SIZES['40x25']);
+const currentSize  = { w: '40mm', h: '25mm' };
 
 function openBarcodeModal(product) {
     barcodeProduct.value = product;
@@ -498,8 +490,7 @@ async function doPrint() {
                             <p v-if="showPrice" class="bc-price">Rs. {{ Number(barcodeProduct?.selling_price || 0).toFixed(2) }}</p>
                         </div>
                         <p class="text-xs text-gray-400 mt-2 text-center">
-                            {{ labelSize }} mm · {{ showPrice ? 'with price' : 'no price' }}
-                            · <Link :href="route('settings.index')" class="text-purple-600 hover:underline">change in Settings</Link>
+                            {{ showPrice ? 'with price' : 'no price' }}
                         </p>
                     </div>
 

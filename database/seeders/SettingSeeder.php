@@ -21,7 +21,6 @@ class SettingSeeder extends Seeder
             'bill_language'      => 'si',
             'sidebar_theme'      => 'slate',
             'primary_color'      => 'blue',
-            'barcode_label_size' => '40x25',
             'barcode_show_price' => '1',
             'logo'               => '',
             'demo_mode'          => '0',

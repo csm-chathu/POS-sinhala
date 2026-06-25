@@ -20,12 +20,6 @@ const LANGS = [
 ];
 
 
-const BARCODE_SIZES = [
-    { id: '20x30', label: '20 × 30 mm', desc: 'Small sticker' },
-    { id: '40x25', label: '40 × 25 mm', desc: 'Standard label' },
-    { id: '50x30', label: '50 × 30 mm', desc: 'Medium label' },
-    { id: '58x40', label: '58 × 40 mm', desc: 'Large label' },
-];
 
 const props = defineProps({
     settings: { type: Object, default: () => ({}) },
@@ -68,7 +62,6 @@ const form = useForm({
         bill_language:  props.settings.bill_language  || 'si',
         sidebar_theme:      props.settings.sidebar_theme      || 'slate',
         primary_color:      props.settings.primary_color      || 'blue',
-        barcode_label_size: props.settings.barcode_label_size || '40x25',
         barcode_show_price: props.settings.barcode_show_price === '1' || props.settings.barcode_show_price === true || props.settings.barcode_show_price === undefined,
         logo:           props.settings.logo || '',
         demo_mode:      props.settings.demo_mode === '1' || props.settings.demo_mode === true,
@@ -419,26 +412,6 @@ async function runMigrations() {
                         <h2 class="font-semibold text-[15px]" style="color:#0F172A; border-bottom:1px solid #E2E8F0; padding-bottom:10px;">
                             🏷 Barcode Label
                         </h2>
-
-                        <!-- Label Size -->
-                        <div>
-                            <label class="block mb-2 text-xs font-semibold uppercase tracking-wide" style="color:#64748B;">Label Size</label>
-                            <div class="grid grid-cols-2 gap-2">
-                                <button
-                                    v-for="s in BARCODE_SIZES"
-                                    :key="s.id"
-                                    type="button"
-                                    @click="form.settings.barcode_label_size = s.id"
-                                    class="px-3 py-2.5 rounded-lg border-2 text-sm font-medium transition-colors text-left"
-                                    :style="form.settings.barcode_label_size === s.id
-                                        ? 'border-color:#7C3AED; background:#F5F3FF; color:#6D28D9;'
-                                        : 'border-color:#E2E8F0; background:#F8FAFC; color:#334155;'"
-                                >
-                                    <span class="font-semibold">{{ s.label }}</span>
-                                    <span class="block text-xs mt-0.5 opacity-60">{{ s.desc }}</span>
-                                </button>
-                            </div>
-                        </div>
 
                         <!-- Show Price toggle -->
                         <div class="flex items-center justify-between py-1">

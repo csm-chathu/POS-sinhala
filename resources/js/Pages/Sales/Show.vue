@@ -309,14 +309,14 @@ onMounted(async () => {
 
 @media print {
     @page {
-        size: 70mm auto;
+        size: 80mm auto;
         margin: 0;
     }
 
     html, body {
         margin: 0 !important;
         padding: 0 !important;
-        width: 70mm !important;
+        width: 80mm !important;
         background: #fff !important;
     }
 
@@ -336,7 +336,7 @@ onMounted(async () => {
         margin: 0 !important;
         min-height: 0 !important;
         height: auto !important;
-        width: 70mm !important;
+        width: 80mm !important;
     }
 
     #receipt-wrapper {
@@ -348,8 +348,8 @@ onMounted(async () => {
 
     #receipt-card {
         display: block !important;
-        width: 70mm !important;
-        max-width: 70mm !important;
+        width: 80mm !important;
+        max-width: 80mm !important;
         padding: 3mm 4mm !important;
         margin: 0 !important;
         border: none !important;
