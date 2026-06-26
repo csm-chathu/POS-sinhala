@@ -28,9 +28,16 @@ return [
         'username' => 'lmucunal_mysql',
         'password' => 'K!ngd0m@!t0ne',
     ],
+    'lover-kahatagasdigiliya.lumac.lk' => [
+        'database' => 'lmucunal_lover_kahatagasdigiliya',
+        'username' => 'lmucunal_mysql',
+        'password' => 'K!ngd0m@!t0ne',
+    ],
     'pos.lumac.lk' => [
         'database' => 'lmucunal_senewirathna',
         'username' => 'lmucunal_mysql',
         'password' => 'K!ngd0m@!t0ne',
     ],
+
+    
 ];

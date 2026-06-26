@@ -62,7 +62,8 @@ const form = useForm({
         bill_language:  props.settings.bill_language  || 'si',
         sidebar_theme:      props.settings.sidebar_theme      || 'slate',
         primary_color:      props.settings.primary_color      || 'blue',
-        barcode_show_price: props.settings.barcode_show_price === '1' || props.settings.barcode_show_price === true || props.settings.barcode_show_price === undefined,
+        barcode_show_price:  props.settings.barcode_show_price === '1' || props.settings.barcode_show_price === true || props.settings.barcode_show_price === undefined,
+        enable_promotions:   props.settings.enable_promotions === '1' || props.settings.enable_promotions === true,
         logo:           props.settings.logo || '',
         demo_mode:      props.settings.demo_mode === '1' || props.settings.demo_mode === true,
         printer_name:   props.settings.printer_name || '',
@@ -432,6 +433,28 @@ async function runMigrations() {
                             </button>
                         </div>
                     </div>
+                </div>
+            </div>
+
+            <!-- Promotions -->
+            <div class="mt-5 p-4 rounded-xl" style="background:#FFF7ED; border:1px solid #FED7AA;">
+                <h3 class="text-sm font-semibold mb-3" style="color:#9A3412;">🏷 Promotions</h3>
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium" style="color:#334155;">Enable Promotional Pricing</p>
+                        <p class="text-xs mt-0.5" style="color:#94A3B8;">Show promo price fields on product pages and apply active promos at checkout</p>
+                    </div>
+                    <button
+                        type="button"
+                        @click="form.settings.enable_promotions = !form.settings.enable_promotions"
+                        class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors"
+                        :style="form.settings.enable_promotions ? 'background:#EA580C;' : 'background:#D1D5DB;'"
+                    >
+                        <span
+                            class="inline-block h-4 w-4 transform rounded-full bg-white transition-transform shadow"
+                            :class="form.settings.enable_promotions ? 'translate-x-6' : 'translate-x-1'"
+                        ></span>
+                    </button>
                 </div>
             </div>
 

@@ -32,6 +32,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/products-import/sample', [ProductImportController::class, 'sample'])->name('products.import.sample');
     Route::post('/products-import',       [ProductImportController::class, 'import'])->name('products.import');
     Route::resource('categories', CategoryController::class);
+    Route::get('/promotions', [ProductController::class, 'promotions'])->name('promotions.index');
 
     // Suppliers & Customers
     Route::resource('suppliers', SupplierController::class);

@@ -93,15 +93,19 @@ class ProductController extends Controller
             'barcode'         => 'nullable|string|max:100|unique:products,barcode',
             'sku'             => 'nullable|string|max:100|unique:products,sku',
             'description'     => 'nullable|string',
-            'cost_price'      => 'nullable|numeric|min:0',
-            'selling_price'   => 'required|numeric|min:0',
-            'wholesale_price' => 'nullable|numeric|min:0',
-            'stock_qty'       => 'nullable|numeric|min:0',
-            'alert_qty'       => 'nullable|numeric|min:0',
-            'unit'            => 'nullable|string|max:50',
-            'active'          => 'boolean',
-            'is_fast_moving'  => 'boolean',
-            'variants'        => 'nullable|array',
+            'cost_price'       => 'nullable|numeric|min:0',
+            'selling_price'    => 'required|numeric|min:0',
+            'wholesale_price'  => 'nullable|numeric|min:0',
+            'expiry_date'      => 'nullable|date',
+            'promo_price'      => 'nullable|numeric|min:0',
+            'promo_start_date' => 'nullable|date',
+            'promo_end_date'   => 'nullable|date',
+            'stock_qty'        => 'nullable|numeric|min:0',
+            'alert_qty'        => 'nullable|numeric|min:0',
+            'unit'             => 'nullable|string|max:50',
+            'active'           => 'boolean',
+            'is_fast_moving'   => 'boolean',
+            'variants'         => 'nullable|array',
             'variants.*.label'           => 'required|string|max:50',
             'variants.*.barcode'         => 'nullable|string|max:100|distinct|unique:product_variants,barcode',
             'variants.*.cost_price'      => 'nullable|numeric|min:0',
@@ -143,6 +147,33 @@ class ProductController extends Controller
         return redirect()->route('products.index')->with('success', 'Product created successfully.');
     }
 
+    public function promotions(Request $request)
+    {
+        $today = now()->toDateString();
+
+        $query = Product::with('category')
+            ->whereNotNull('promo_price')
+            ->where('promo_start_date', '<=', $today)
+            ->where('promo_end_date',   '>=', $today);
+
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                  ->orWhere('barcode', 'like', "%{$search}%");
+            });
+        }
+
+        $products   = $query->latest()->paginate(20)->withQueryString();
+        $categories = Category::orderBy('name')->get();
+
+        return Inertia::render('Promotions/Index', [
+            'products'   => $products,
+            'categories' => $categories,
+            'filters'    => $request->only(['search']),
+        ])->with(['flash' => session('flash')]);
+    }
+
     public function show(string $id)
     {
         $product = Product::with('category')->findOrFail($id);
@@ -172,15 +203,19 @@ class ProductController extends Controller
             'barcode'         => 'nullable|string|max:100|unique:products,barcode,' . $product->id,
             'sku'             => 'nullable|string|max:100|unique:products,sku,' . $product->id,
             'description'     => 'nullable|string',
-            'cost_price'      => 'nullable|numeric|min:0',
-            'selling_price'   => 'required|numeric|min:0',
-            'wholesale_price' => 'nullable|numeric|min:0',
-            'stock_qty'       => 'nullable|numeric|min:0',
-            'alert_qty'       => 'nullable|numeric|min:0',
-            'unit'            => 'nullable|string|max:50',
-            'active'          => 'boolean',
-            'is_fast_moving'  => 'boolean',
-            'variants'        => 'nullable|array',
+            'cost_price'       => 'nullable|numeric|min:0',
+            'selling_price'    => 'required|numeric|min:0',
+            'wholesale_price'  => 'nullable|numeric|min:0',
+            'expiry_date'      => 'nullable|date',
+            'promo_price'      => 'nullable|numeric|min:0',
+            'promo_start_date' => 'nullable|date',
+            'promo_end_date'   => 'nullable|date',
+            'stock_qty'        => 'nullable|numeric|min:0',
+            'alert_qty'        => 'nullable|numeric|min:0',
+            'unit'             => 'nullable|string|max:50',
+            'active'           => 'boolean',
+            'is_fast_moving'   => 'boolean',
+            'variants'         => 'nullable|array',
             'variants.*.id'              => 'nullable|integer',
             'variants.*.label'           => 'required|string|max:50',
             'variants.*.barcode'         => 'nullable|string|max:100',
@@ -287,18 +322,26 @@ class ProductController extends Controller
             ])->values()->all()
             : [];
 
+        $today      = now()->toDateString();
+        $promoPrice = $product->promo_price
+            && $product->promo_start_date?->toDateString() <= $today
+            && $product->promo_end_date?->toDateString()   >= $today
+            ? (float) $product->promo_price
+            : null;
+
         return [
-            'id'              => $product->id,
-            'variant_id'      => null,
-            'name'            => $product->name,
-            'name_si'         => $product->name_si,
-            'barcode'         => $product->barcode,
-            'selling_price'   => $product->selling_price,
-            'wholesale_price' => $product->wholesale_price,
-            'cost_price'      => $product->cost_price,
-            'stock_qty'       => $product->stock_qty,
-            'unit'            => $product->unit,
-            'sizes'           => $sizes,
+            'id'               => $product->id,
+            'variant_id'       => null,
+            'name'             => $product->name,
+            'name_si'          => $product->name_si,
+            'barcode'          => $product->barcode,
+            'selling_price'    => $product->selling_price,
+            'wholesale_price'  => $product->wholesale_price,
+            'cost_price'       => $product->cost_price,
+            'stock_qty'        => $product->stock_qty,
+            'unit'             => $product->unit,
+            'sizes'            => $sizes,
+            'promo_price'      => $promoPrice,
         ];
     }
 }

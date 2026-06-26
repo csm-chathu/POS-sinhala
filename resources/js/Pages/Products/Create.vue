@@ -1,10 +1,12 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { Head, Link, useForm } from '@inertiajs/vue3';
-import { inject, ref } from 'vue';
+import { inject, ref, computed } from 'vue';
+import { usePage } from '@inertiajs/vue3';
 import { invalidateProducts } from '@/stores/productCache';
 
 const t = inject('t');
+const promotionsEnabled = computed(() => usePage().props.appSettings?.enable_promotions === '1' || usePage().props.appSettings?.enable_promotions === true);
 
 const props = defineProps({
     categories: { type: Array, default: () => [] },
@@ -18,8 +20,12 @@ const form = useForm({
     sku:             '',
     cost_price:      '',
     selling_price:   '',
-    wholesale_price: '',
-    stock_qty:       0,
+    wholesale_price:  '',
+    expiry_date:      '',
+    promo_price:      '',
+    promo_start_date: '',
+    promo_end_date:   '',
+    stock_qty:        0,
     alert_qty:       1,
     unit:            'pcs',
     description:     '',
@@ -180,6 +186,35 @@ function submit() {
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">{{ t('prod.wholesale_price') }}</label>
                             <input v-model="form.wholesale_price" type="number" step="0.01" min="0" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" :class="{ 'border-red-500': form.errors.wholesale_price }" placeholder="0.00" />
+                        </div>
+
+                        <!-- Item expiry date -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Item Expiry Date</label>
+                            <input v-model="form.expiry_date" type="date" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" :class="{ 'border-red-500': form.errors.expiry_date }" />
+                            <p v-if="form.errors.expiry_date" class="text-red-500 text-xs mt-1">{{ form.errors.expiry_date }}</p>
+                        </div>
+
+                        <!-- Promotional pricing -->
+                        <div v-if="promotionsEnabled" class="rounded-lg bg-orange-50 border border-orange-200 p-3 space-y-2">
+                            <p class="text-xs font-semibold text-orange-700 uppercase tracking-wide">Promotional Price</p>
+                            <div>
+                                <label class="block text-sm font-medium text-orange-700 mb-1">Promo Price</label>
+                                <input v-model="form.promo_price" type="number" step="0.01" min="0" class="w-full border border-orange-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 bg-white" :class="{ 'border-red-500': form.errors.promo_price }" placeholder="0.00" />
+                                <p v-if="form.errors.promo_price" class="text-red-500 text-xs mt-1">{{ form.errors.promo_price }}</p>
+                            </div>
+                            <div class="grid grid-cols-2 gap-2">
+                                <div>
+                                    <label class="block text-sm font-medium text-orange-700 mb-1">Start Date</label>
+                                    <input v-model="form.promo_start_date" type="date" class="w-full border border-orange-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 bg-white" :class="{ 'border-red-500': form.errors.promo_start_date }" />
+                                    <p v-if="form.errors.promo_start_date" class="text-red-500 text-xs mt-1">{{ form.errors.promo_start_date }}</p>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-orange-700 mb-1">End Date</label>
+                                    <input v-model="form.promo_end_date" type="date" class="w-full border border-orange-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 bg-white" :class="{ 'border-red-500': form.errors.promo_end_date }" />
+                                    <p v-if="form.errors.promo_end_date" class="text-red-500 text-xs mt-1">{{ form.errors.promo_end_date }}</p>
+                                </div>
+                            </div>
                         </div>
 
                         <div class="text-xs text-gray-400 pt-1">

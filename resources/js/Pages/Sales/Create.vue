@@ -527,10 +527,10 @@ function addToCart(product, initialQty = null, focusQty = true) {
             });
         }
     } else {
-        const wsPrice = parseFloat(product.wholesale_price) || 0;
-        const unitPrice = priceMode.value === 'wholesale' && wsPrice > 0
-            ? wsPrice
-            : parseFloat(product.selling_price) || 0;
+        const wsPrice    = parseFloat(product.wholesale_price) || 0;
+        const promoPrice = product.promo_price ? parseFloat(product.promo_price) : null;
+        const basePrice  = promoPrice ?? (parseFloat(product.selling_price) || 0);
+        const unitPrice  = priceMode.value === 'wholesale' && wsPrice > 0 ? wsPrice : basePrice;
 
         const startQty = initialQty !== null ? initialQty : (isWeightUnit ? null : 1);
         cart.value.push({
@@ -541,6 +541,7 @@ function addToCart(product, initialQty = null, focusQty = true) {
             qty:             startQty,
             unit_price:      unitPrice,
             selling_price:   parseFloat(product.selling_price) || 0,
+            promo_price:     promoPrice,
             wholesale_price: wsPrice,
             discount:        0,
             total:           0,
@@ -663,13 +664,14 @@ function submitSale() {
     }
     submitting.value = true;
     form.items          = cart.value.map(i => ({
-        product_id: i.product_id,
-        variant_id: i.variant_id || null,
-        name:       i.name,
-        qty:        i.qty,
-        unit_price: i.unit_price,
-        discount:   i.discount,
-        total:      i.total,
+        product_id:     i.product_id,
+        variant_id:     i.variant_id || null,
+        name:           i.name,
+        qty:            i.qty,
+        unit_price:     i.unit_price,
+        original_price: i.promo_price ? i.selling_price : null,
+        discount:       i.discount,
+        total:          i.total,
     }));
     form.customer_id     = selectedCustomer.value?.id || null;
     form.payment_method  = paymentMethod.value;
@@ -1096,7 +1098,16 @@ const focusedPriceIdx = ref(null);
                                     :class="idx % 2 === 0 ? 'bg-white dark:bg-slate-800' : 'bg-gray-100/60 dark:bg-slate-800/60'"
                                 >
                                     <td class="px-4 py-3">
-                                        <p class="font-medium text-gray-800 dark:text-gray-100 leading-tight text-sm lg:text-base">{{ item.name }}</p>
+                                        <div class="flex items-center gap-2 flex-wrap">
+                                            <p class="font-medium text-gray-800 dark:text-gray-100 leading-tight text-sm lg:text-base">{{ item.name }}</p>
+                                            <span
+                                                v-if="item.promo_price"
+                                                class="inline-flex items-center gap-1 text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-orange-100 text-orange-700"
+                                            >
+                                                🏷 PROMO
+                                                <span class="line-through text-gray-400 font-normal">{{ fmt(item.selling_price) }}</span>
+                                            </span>
+                                        </div>
                                         <div class="flex items-center gap-2 mt-0.5">
                                             <p class="text-xs text-gray-400 dark:text-slate-500 font-mono">{{ item.barcode }}</p>
                                             <span

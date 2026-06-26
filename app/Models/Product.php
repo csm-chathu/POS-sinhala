@@ -24,14 +24,22 @@ class Product extends Model
         'unit',
         'active',
         'is_fast_moving',
+        'expiry_date',
+        'promo_price',
+        'promo_start_date',
+        'promo_end_date',
     ];
 
     protected $casts = [
-        'cost_price'      => 'decimal:2',
-        'selling_price'   => 'decimal:2',
-        'wholesale_price' => 'decimal:2',
-        'active'          => 'boolean',
-        'is_fast_moving'  => 'boolean',
+        'cost_price'       => 'decimal:2',
+        'selling_price'    => 'decimal:2',
+        'wholesale_price'  => 'decimal:2',
+        'expiry_date'      => 'date',
+        'promo_price'      => 'decimal:2',
+        'promo_start_date' => 'date',
+        'promo_end_date'   => 'date',
+        'active'           => 'boolean',
+        'is_fast_moving'   => 'boolean',
     ];
 
     public function variants()

@@ -66,6 +66,16 @@ function formatCurrency(value) {
     return 'Rs. ' + Number(value).toLocaleString('en-LK', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
+function activePromo(product) {
+    if (!product.promo_price) return null;
+    const today = new Date().toISOString().slice(0, 10);
+    const start = product.promo_start_date ? String(product.promo_start_date).slice(0, 10) : null;
+    const end   = product.promo_end_date   ? String(product.promo_end_date).slice(0, 10)   : null;
+    if (start && start > today) return null;
+    if (end   && end   < today) return null;
+    return product.promo_price;
+}
+
 function fmtQty(val) {
     return parseFloat(Number(val || 0).toFixed(3)).toString();
 }
@@ -110,17 +120,25 @@ function closeBarcodeModal() {
 
 function renderBarcode(el) {
     if (!el || !barcodeProduct.value?.barcode) return;
-    try {
-        JsBarcode(el, barcodeProduct.value.barcode, {
-            format: 'CODE128',
-            displayValue: true,
-            fontSize: 9,
-            textMargin: 2,
-            width: 1.4,
-            height: 28,
-            margin: 2,
-        });
-    } catch {}
+    const targets = el?.length !== undefined ? Array.from(el) : [el];
+    targets.forEach(svg => {
+        if (!svg) return;
+        try {
+            JsBarcode(svg, barcodeProduct.value.barcode, {
+                format: 'CODE128',
+                displayValue: true,
+                fontSize: 9,
+                fontOptions: 'bold',
+                textMargin: 1,
+                width: 0.8,
+                height: 20,
+                margin: 1,
+            });
+            const w = svg.getAttribute('width');
+            const h = svg.getAttribute('height');
+            if (w && h) svg.setAttribute('viewBox', `0 0 ${w} ${h}`);
+        } catch {}
+    });
 }
 
 async function doPrint() {
@@ -130,12 +148,13 @@ async function doPrint() {
     await nextTick();
     document.documentElement.classList.add('barcode-printing');
     try {
-        if (window.electronAPI?.printBarcode) {
-            const printer = localStorage.getItem('pos_printer') || usePage().props.appSettings?.printer_name || '';
-            console.log('[Barcode Print] printer:', printer || '(default)');
-            await window.electronAPI.printBarcode(printer);
-        } else {
-            window.print();
+        const printer = localStorage.getItem('pos_printer') || usePage().props.appSettings?.printer_name || '';
+        for (let i = 0; i < barcodeQty.value; i++) {
+            if (window.electronAPI?.printReceipt) {
+                await window.electronAPI.printReceipt(printer);
+            } else {
+                window.print();
+            }
         }
     } finally {
         document.documentElement.classList.remove('barcode-printing');
@@ -272,7 +291,11 @@ async function doPrint() {
                     </div>
                     <div>
                         <p class="text-gray-400 text-xs">{{ t('th.sell_price') }}</p>
-                        <p class="font-medium text-green-600">{{ formatCurrency(product.selling_price) }}</p>
+                        <template v-if="activePromo(product)">
+                            <p class="font-medium text-orange-600">{{ formatCurrency(activePromo(product)) }}</p>
+                            <p class="text-xs text-gray-400 line-through">{{ formatCurrency(product.selling_price) }}</p>
+                        </template>
+                        <p v-else class="font-medium text-green-600">{{ formatCurrency(product.selling_price) }}</p>
                     </div>
                     <div>
                         <p class="text-gray-400 text-xs">{{ t('th.stock') }}</p>
@@ -367,7 +390,14 @@ async function doPrint() {
                             </td>
                             <td class="px-4 py-3 text-sm text-gray-500 font-mono">{{ product.barcode }}</td>
                             <td class="px-4 py-3 text-sm text-gray-600">{{ product.category?.name || '-' }}</td>
-                            <td class="px-4 py-3 font-medium text-green-600">{{ formatCurrency(product.selling_price) }}</td>
+                            <td class="px-4 py-3">
+                                <template v-if="activePromo(product)">
+                                    <span class="font-medium text-orange-600">{{ formatCurrency(activePromo(product)) }}</span>
+                                    <span class="ml-1.5 text-xs text-gray-400 line-through">{{ formatCurrency(product.selling_price) }}</span>
+                                    <span class="ml-1 text-[10px] font-semibold bg-orange-100 text-orange-700 px-1 py-0.5 rounded-full">PROMO</span>
+                                </template>
+                                <span v-else class="font-medium text-green-600">{{ formatCurrency(product.selling_price) }}</span>
+                            </td>
                             <td class="px-4 py-3">
                                 <span
                                     class="font-medium"
@@ -484,9 +514,8 @@ async function doPrint() {
                     <div class="barcode-preview-wrap">
                         <p class="barcode-section-label">Preview</p>
                         <div class="barcode-label-preview">
-                            <svg ref="modalBarcodeSvg"></svg>
                             <p class="bc-name">{{ barcodeProduct?.name }}</p>
-                            <p v-if="barcodeProduct?.name_si" class="bc-name-si">{{ barcodeProduct?.name_si }}</p>
+                            <svg ref="modalBarcodeSvg"></svg>
                             <p v-if="showPrice" class="bc-price">Rs. {{ Number(barcodeProduct?.selling_price || 0).toFixed(2) }}</p>
                         </div>
                         <p class="text-xs text-gray-400 mt-2 text-center">
@@ -527,14 +556,11 @@ async function doPrint() {
         <!-- Hidden print-only area (rendered when printing) -->
         <div v-if="printing" id="barcode-print-area"
             :style="`--lw:${currentSize.w};--lh:${currentSize.h}`">
-            <template v-for="n in barcodeQty" :key="n">
-                <div class="bc-label-page">
-                    <svg ref="printBarcodeSvg"></svg>
-                    <p class="bc-print-name">{{ barcodeProduct?.name }}</p>
-                    <p v-if="barcodeProduct?.name_si" class="bc-print-name-si">{{ barcodeProduct?.name_si }}</p>
-                    <p v-if="showPrice" class="bc-print-price">Rs. {{ Number(barcodeProduct?.selling_price || 0).toFixed(2) }}</p>
-                </div>
-            </template>
+            <div class="bc-label-page">
+                <p class="bc-print-name">{{ barcodeProduct?.name }}</p>
+                <svg ref="printBarcodeSvg"></svg>
+                <p v-if="showPrice" class="bc-print-price">Rs. {{ Number(barcodeProduct?.selling_price || 0).toFixed(2) }}</p>
+            </div>
         </div>
     </Teleport>
 </template>
@@ -645,24 +671,38 @@ async function doPrint() {
 
     html.barcode-printing body > * { display: none !important; }
     html.barcode-printing #barcode-print-area { display: block !important; }
+
+    @page { size: 30mm 20mm; margin: 0; }
+
     html.barcode-printing .bc-label-page {
-        width: var(--lw, 40mm);
-        height: var(--lh, 25mm);
-        display: flex; flex-direction: column;
-        align-items: center; justify-content: center;
+        width: 30mm;
+        height: 20mm;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5mm;
         padding: 1mm;
+        margin: 0;
         font-family: sans-serif;
         overflow: hidden;
-        page-break-after: always;
+        box-sizing: border-box;
     }
-    html.barcode-printing .bc-label-page svg { display: block; max-width: calc(var(--lw, 40mm) - 4mm) !important; height: auto !important; }
-    html.barcode-printing .bc-print-name { margin: 0.5mm 0 0; font-size: 7pt; font-weight: 700; text-align: center; line-height: 1.2; max-width: calc(var(--lw, 40mm) - 2mm); overflow: hidden; white-space: nowrap; }
-    html.barcode-printing .bc-print-name-si { font-size: 6pt; font-weight: 600; text-align: center; line-height: 1.2; max-width: calc(var(--lw, 40mm) - 2mm); overflow: hidden; white-space: nowrap; }
-    html.barcode-printing .bc-print-price { margin: 0.5mm 0 0; font-size: 8pt; font-weight: 800; color: #000; text-align: center; }
+    html.barcode-printing .bc-label-page svg {
+        display: block;
+        width: auto !important;
+        max-width: 100% !important;
+        height: auto !important;
+    }
+    html.barcode-printing .bc-print-name {
+        font-size: 7pt; font-weight: 700;
+        text-align: center; line-height: 1.1;
+        white-space: nowrap; overflow: hidden;
+        margin: 0;
+    }
+    html.barcode-printing .bc-print-price {
+        font-size: 6pt; font-weight: 800;
+        text-align: center; margin: 0;
+    }
 }
-
-@media print {
-    html.barcode-printing { --lw: 40mm; --lh: 25mm; }
-}
-/* @page size is set per-print via Electron pageSize option; no global @page rule here */
 </style>

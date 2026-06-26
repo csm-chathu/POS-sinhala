@@ -70,6 +70,7 @@ async function printReceipt() {
             const printer = localStorage.getItem('pos_printer') || usePage().props.appSettings?.printer_name || '';
             console.log('[Receipt Print] printer:', printer || '(default)');
             await window.electronAPI.printReceipt(printer);
+            await window.electronAPI.openCashDrawer?.();
         } else {
             window.print();
         }
@@ -197,6 +198,7 @@ onMounted(async () => {
                                     </div>
                                     <div style="margin-top:1px;">
                                         {{ fmtQty(item.qty) }} &times; {{ n(item.unit_price) }}
+                                        <span v-if="item.original_price" style="text-decoration:line-through; color:#94A3B8; font-size:10px; margin-left:3px;">{{ n(item.original_price) }}</span>
                                         <span v-if="Number(item.discount) > 0"> (ලද වට්ටම: &minus;{{ n(item.discount) }})</span>
                                     </div>
                                 </td>
@@ -250,6 +252,7 @@ onMounted(async () => {
                 <p class="text-center font-extrabold text-[11px]" style="color:#0F172A; white-space: pre-line;">{{ footer }}</p>
 
                 <p class="text-center font-extrabold text-[9px] mt-2" style="color:#0F172A;">lunac.lk</p>
+
             </div>
 
         </div>
@@ -381,5 +384,6 @@ onMounted(async () => {
         max-height: 56px !important;
         max-width: 160px !important;
     }
+
 }
 </style>

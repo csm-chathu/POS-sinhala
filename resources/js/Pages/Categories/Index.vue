@@ -7,7 +7,7 @@ import { inject, ref } from 'vue';
 const t = inject('t');
 
 const props = defineProps({
-    categories: { type: Array, default: () => [] },
+    categories: { type: Object, default: () => ({ data: [] }) },
 });
 
 const deleteTarget = ref(null);
@@ -19,7 +19,7 @@ function promptDelete(id, name) {
 
 function doDelete() {
     deleting.value = true;
-    router.delete(route('categories.destroy', deleteTarget.value.id), {
+    router.delete(route('categories.destroy', { category: deleteTarget.value.id }), {
         onFinish: () => { deleting.value = false; deleteTarget.value = null; },
     });
 }
@@ -56,11 +56,11 @@ function doDelete() {
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-100">
-                    <tr v-if="categories.length === 0">
+                    <tr v-if="categories.data.length === 0">
                         <td colspan="4" class="px-4 py-8 text-center text-gray-400">{{ t('lbl.no_data') }}</td>
                     </tr>
                     <tr
-                        v-for="(category, idx) in categories"
+                        v-for="(category, idx) in categories.data"
                         :key="category.id"
                         class="hover:bg-gray-50 transition-colors"
                     >
@@ -70,7 +70,7 @@ function doDelete() {
                         <td class="px-4 py-3">
                             <div class="flex items-center justify-end gap-2">
                                 <Link
-                                    :href="route('categories.edit', category.id)"
+                                    :href="route('categories.edit', { category: category.id })"
                                     class="text-blue-600 hover:text-blue-800 text-sm font-medium px-3 py-1.5 rounded hover:bg-blue-50 min-h-[36px] flex items-center"
                                 >
                                     {{ t('btn.edit') }}
@@ -87,15 +87,15 @@ function doDelete() {
                 </tbody>
             </table>
         </div>
-    </AuthenticatedLayout>
 
-    <ConfirmModal
-        :show="!!deleteTarget"
-        title="Delete Category"
-        :message="`Are you sure you want to delete &quot;${deleteTarget?.name}&quot;? This cannot be undone.`"
-        confirm-label="Delete Category"
-        :busy="deleting"
-        @confirm="doDelete"
-        @cancel="deleteTarget = null"
-    />
+        <ConfirmModal
+            :show="!!deleteTarget"
+            title="Delete Category"
+            :message="`Are you sure you want to delete &quot;${deleteTarget?.name}&quot;? This cannot be undone.`"
+            confirm-label="Delete Category"
+            :busy="deleting"
+            @confirm="doDelete"
+            @cancel="deleteTarget = null"
+        />
+    </AuthenticatedLayout>
 </template>
