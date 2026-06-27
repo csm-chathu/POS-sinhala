@@ -69,9 +69,9 @@ const splitCardReceiptNo = ref('');
 const shakePaid          = ref(false);
 const billDiscount     = ref('');   // bill-level discount (Rs.)
 const discountType     = ref('amount'); // 'amount' | 'percent'
-const extraCharges     = ref([]);   // [{reason, amount}]
-const extraReason      = ref('');
-const extraAmount      = ref('');
+const showCustomForm   = ref(false);
+const customName       = ref('');
+const customPrice      = ref('');
 const holdNote         = ref('');
 const showHoldModal    = ref(false);
 const submitting       = ref(false);
@@ -97,7 +97,6 @@ function restoreHeldBill(index) {
     const bill = heldBills.value[index];
     cart.value             = bill.cart;
     selectedCustomer.value = bill.customer || null;
-    extraCharges.value     = bill.extraCharges || [];
     const updated = [...heldBills.value];
     updated.splice(index, 1);
     localStorage.setItem('heldBills', JSON.stringify(updated));
@@ -188,13 +187,7 @@ const billDiscountAmt = computed(() => {
 });
 const totalDiscount = computed(() => lineDiscount.value + billDiscountAmt.value);
 const tax     = computed(() => 0);
-const extraTotal = computed(() => {
-    const confirmed = extraCharges.value.reduce((s, e) => s + (parseFloat(e.amount) || 0), 0);
-    const pendingAmt = parseFloat(extraAmount.value) || 0;
-    const pending = extraReason.value.trim() && pendingAmt > 0 ? pendingAmt : 0;
-    return confirmed + pending;
-});
-const total   = computed(() => Math.max(0, subtotal.value - totalDiscount.value + tax.value + extraTotal.value));
+const total   = computed(() => Math.max(0, subtotal.value - totalDiscount.value + tax.value));
 const balance       = computed(() => (parseFloat(cashPaid.value) || 0) - total.value);
 const splitCardAmt  = computed(() => Math.max(0, total.value - (parseFloat(splitCashAmt.value) || 0)));
 
@@ -637,23 +630,37 @@ function setPaymentMethod(method) {
     }
 }
 
-// ─── Extra charges ────────────────────────────────────────────────────────────
-function addExtraCharge() {
-    const amt = parseFloat(extraAmount.value);
-    if (!extraReason.value.trim() || !amt || amt <= 0) return;
-    extraCharges.value.push({ reason: extraReason.value.trim(), amount: amt });
-    extraReason.value = '';
-    extraAmount.value = '';
-}
-
-function removeExtraCharge(index) {
-    extraCharges.value.splice(index, 1);
+// ─── Custom item ──────────────────────────────────────────────────────────────
+function addCustomItem() {
+    const price = parseFloat(customPrice.value);
+    if (!customName.value.trim() || !price || price <= 0) return;
+    cart.value.push({
+        product_id:      null,
+        variant_id:      null,
+        name:            customName.value.trim(),
+        barcode:         '',
+        qty:             1,
+        unit_price:      price,
+        selling_price:   price,
+        promo_price:     null,
+        wholesale_price: 0,
+        discount:        0,
+        total:           price,
+        unit:            'pcs',
+        stock_qty:       9999999,
+        alert_qty:       0,
+        is_custom:       true,
+    });
+    customName.value     = '';
+    customPrice.value    = '';
+    showCustomForm.value = false;
+    refocusSearch();
 }
 
 // ─── Submit sale ──────────────────────────────────────────────────────────────
 function submitSale() {
     errorMsg.value = '';
-    if (cart.value.length === 0 && extraCharges.value.length === 0) { errorMsg.value = t('err.cart_empty'); return; }
+    if (cart.value.length === 0) { errorMsg.value = t('err.cart_empty'); return; }
     if (total.value <= 0)        { errorMsg.value = t('err.zero_total'); return; }
     if (paymentMethod.value === 'credit' && !selectedCustomer.value) {
         errorMsg.value = t('err.credit_needs_customer'); return;
@@ -711,15 +718,11 @@ function submitSale() {
         : paymentMethod.value === 'credit'
             ? parseFloat(cashPaid.value) || 0
             : total.value;
-    // Auto-commit any pending extra charge the user typed but didn't click "+"
-    if (extraReason.value.trim() && parseFloat(extraAmount.value) > 0) {
-        addExtraCharge();
-    }
     form.subtotal       = subtotal.value;
     form.discount       = totalDiscount.value;
     form.tax            = tax.value;
     form.total          = total.value;
-    form.extra_charges  = extraCharges.value.length ? extraCharges.value : null;
+    form.extra_charges  = null;
 
     form.post(route('sales.store'), {
         onSuccess: () => {
@@ -748,18 +751,16 @@ function confirmHold() {
     // Store held bill in localStorage for later retrieval
     const held = JSON.parse(localStorage.getItem('heldBills') || '[]');
     held.push({
-        id:           Date.now(),
-        note:         holdNote.value,
-        cart:         cart.value,
-        customer:     selectedCustomer.value,
-        extraCharges: extraCharges.value,
-        createdAt:    new Date().toISOString(),
+        id:        Date.now(),
+        note:      holdNote.value,
+        cart:      cart.value,
+        customer:  selectedCustomer.value,
+        createdAt: new Date().toISOString(),
     });
     localStorage.setItem('heldBills', JSON.stringify(held));
     heldBills.value        = held;
     cart.value             = [];
     selectedCustomer.value = null;
-    extraCharges.value     = [];
     cashPaid.value         = '';
     billDiscount.value     = '';
     holdNote.value         = '';
@@ -1082,8 +1083,51 @@ const focusedPriceIdx = ref(null);
                             </svg>
                             {{ t('lbl.wholesale') }}
                         </button>
+                        <button
+                            type="button"
+                            @click="showCustomForm = !showCustomForm"
+                            class="h-full px-4 text-sm font-semibold transition-colors border-l border-gray-200 dark:border-slate-600 flex items-center gap-1.5"
+                            :class="showCustomForm
+                                ? 'bg-amber-500 text-white'
+                                : 'bg-gray-50 text-gray-500 hover:bg-amber-50 hover:text-amber-600 dark:bg-slate-700 dark:text-slate-300 dark:hover:bg-slate-600'"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                            </svg>
+                            Custom
+                        </button>
                     </div>
                     </div>
+
+                <!-- Custom item inline form -->
+                <div v-if="showCustomForm" class="flex items-center gap-2 mt-2">
+                    <input
+                        v-model="customName"
+                        type="text"
+                        placeholder="Item name / description"
+                        class="flex-1 border border-amber-300 dark:border-amber-700 dark:bg-slate-700 dark:text-gray-100 dark:placeholder-slate-500 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-300"
+                        @keydown.enter.prevent="addCustomItem"
+                    />
+                    <input
+                        v-model="customPrice"
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        placeholder="Price (Rs)"
+                        class="w-28 border border-amber-300 dark:border-amber-700 dark:bg-slate-700 dark:text-gray-100 dark:placeholder-slate-500 rounded-lg px-3 py-2 text-sm text-right focus:outline-none focus:ring-2 focus:ring-amber-300"
+                        @keydown.enter.prevent="addCustomItem"
+                    />
+                    <button
+                        type="button"
+                        @click="addCustomItem"
+                        class="px-4 py-2 rounded-lg bg-amber-500 hover:bg-amber-600 text-white text-sm font-bold transition-colors"
+                    >Add</button>
+                    <button
+                        type="button"
+                        @click="showCustomForm = false; customName = ''; customPrice = ''"
+                        class="px-3 py-2 rounded-lg bg-gray-100 hover:bg-gray-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-gray-500 dark:text-slate-400 text-sm font-medium transition-colors"
+                    >✕</button>
+                </div>
                 </div>
 
                 <!-- Cart Table -->
@@ -1124,7 +1168,7 @@ const focusedPriceIdx = ref(null);
                             <tbody>
                                 <tr
                                     v-for="(item, idx) in cart"
-                                    :key="item.product_id"
+                                    :key="item.product_id != null ? item.product_id : 'c' + idx"
                                     class="border-b border-gray-50 dark:border-slate-700 transition-colors"
                                     :class="idx % 2 === 0 ? 'bg-white dark:bg-slate-800' : 'bg-gray-100/60 dark:bg-slate-800/60'"
                                 >
@@ -1218,21 +1262,16 @@ const focusedPriceIdx = ref(null);
                     </div>
 
                     <!-- Cart footer totals (inline summary) -->
-                    <div v-if="cart.length > 0 || extraTotal > 0"
-                        class="border-t border-gray-200 dark:border-slate-700 px-4 py-3 bg-gray-100 dark:bg-slate-900 grid gap-2"
-                        :class="{
-                            'grid-cols-3': cart.length > 0 && extraTotal === 0,
-                            'grid-cols-4': cart.length > 0 && extraTotal > 0,
-                            'grid-cols-2': cart.length === 0 && extraTotal > 0,
-                        }"
+                    <div v-if="cart.length > 0"
+                        class="border-t border-gray-200 dark:border-slate-700 px-4 py-3 bg-gray-100 dark:bg-slate-900 grid grid-cols-3 gap-2"
                     >
-                        <!-- Subtotal (only when cart has items) -->
-                        <div v-if="cart.length > 0" class="flex items-center justify-between bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 px-3 py-2.5 gap-2">
+                        <!-- Subtotal -->
+                        <div class="flex items-center justify-between bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 px-3 py-2.5 gap-2">
                             <span class="text-xs lg:text-sm font-medium text-gray-400 dark:text-slate-500 uppercase tracking-wide whitespace-nowrap">{{ t('lbl.subtotal') }}</span>
                             <span class="text-sm lg:text-base font-bold text-gray-800 dark:text-slate-200 whitespace-nowrap">{{ fmt(subtotal) }}</span>
                         </div>
-                        <!-- Discount (only when cart has items) -->
-                        <div v-if="cart.length > 0" class="flex items-center justify-between rounded-xl border px-3 py-2.5 gap-2"
+                        <!-- Discount -->
+                        <div class="flex items-center justify-between rounded-xl border px-3 py-2.5 gap-2"
                             :class="totalDiscount > 0
                                 ? 'bg-orange-50 dark:bg-orange-950 border-orange-200 dark:border-orange-900'
                                 : 'bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700'"
@@ -1245,11 +1284,6 @@ const focusedPriceIdx = ref(null);
                                 :class="totalDiscount > 0 ? 'text-orange-600 dark:text-orange-400' : 'text-gray-400 dark:text-slate-600'">
                                 {{ totalDiscount > 0 ? '-' + fmt(totalDiscount) : fmt(0) }}
                             </span>
-                        </div>
-                        <!-- Extra Charges (when extraTotal > 0) -->
-                        <div v-if="extraTotal > 0" class="flex items-center justify-between bg-blue-50 dark:bg-blue-950 rounded-xl border border-blue-200 dark:border-blue-900 px-3 py-2.5 gap-2">
-                            <span class="text-xs lg:text-sm font-medium text-blue-400 dark:text-blue-500 uppercase tracking-wide whitespace-nowrap">Extra</span>
-                            <span class="text-sm lg:text-base font-bold text-blue-600 dark:text-blue-400 whitespace-nowrap">+{{ fmt(extraTotal) }}</span>
                         </div>
                         <!-- Grand total -->
                         <div class="flex items-center justify-between bg-emerald-600 dark:bg-emerald-700 rounded-xl border border-emerald-500 px-3 py-2.5 gap-2">
@@ -1342,46 +1376,6 @@ const focusedPriceIdx = ref(null);
                         <span class="font-medium">{{ fmt(tax) }}</span>
                     </div>
 
-                    <!-- Extra charges -->
-                    <div class="border-t border-dashed border-gray-200 dark:border-slate-600 pt-2">
-                        <div class="flex items-center gap-1 mb-1.5">
-                            <input
-                                v-model="extraReason"
-                                type="text"
-                                placeholder="Reason (e.g. Delivery)"
-                                class="flex-1 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-gray-100 dark:placeholder-slate-500 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-blue-300"
-                                @keydown.enter.prevent="addExtraCharge"
-                            />
-                            <input
-                                v-model="extraAmount"
-                                type="number"
-                                min="0"
-                                step="0.01"
-                                placeholder="Rs"
-                                class="w-20 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-gray-100 dark:placeholder-slate-500 rounded-lg px-2 py-1.5 text-xs text-right focus:outline-none focus:ring-2 focus:ring-blue-300"
-                                @keydown.enter.prevent="addExtraCharge"
-                            />
-                            <button
-                                type="button"
-                                @click="addExtraCharge"
-                                class="px-2 py-1.5 rounded-lg bg-blue-600 text-white text-xs font-bold hover:bg-blue-700"
-                            >+</button>
-                        </div>
-                        <div v-for="(ec, i) in extraCharges" :key="i" class="flex items-center justify-between text-xs py-0.5">
-                            <span class="text-gray-600 dark:text-slate-300 truncate flex-1">+ {{ ec.reason }}</span>
-                            <span class="font-semibold text-blue-700 dark:text-blue-400 mx-2">{{ fmt(ec.amount) }}</span>
-                            <button type="button" @click="removeExtraCharge(i)" class="text-red-400 hover:text-red-600 text-xs">✕</button>
-                        </div>
-                    </div>
-
-                    <div v-if="extraTotal > 0" class="flex justify-between text-sm text-blue-600 dark:text-blue-400 font-semibold">
-                        <span>Extra Charges</span>
-                        <span>+ {{ fmt(extraTotal) }}</span>
-                    </div>
-                    <div v-if="subtotal > 0 && extraTotal > 0" class="flex justify-between text-xs text-gray-400 dark:text-slate-500">
-                        <span>{{ fmt(subtotal) }} + {{ fmt(extraTotal) }}</span>
-                        <span>= {{ fmt(total) }}</span>
-                    </div>
                     <div class="border-t border-gray-100 dark:border-slate-700 pt-2 flex justify-between items-baseline">
                         <span class="billing-total-label font-bold text-gray-800 dark:text-slate-100 text-base lg:text-lg">{{ t('lbl.grand_total') }}</span>
                         <span class="billing-total-amount font-bold text-blue-700 dark:text-blue-400 text-2xl lg:text-3xl">{{ fmt(total) }}</span>
@@ -1645,7 +1639,7 @@ const focusedPriceIdx = ref(null);
                     <button
                         type="button"
                         @click="submitSale"
-                        :disabled="(cart.length === 0 && extraCharges.length === 0) || submitting || form.processing"
+                        :disabled="cart.length === 0 || submitting || form.processing"
                         class="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-bold text-lg lg:text-xl py-4 lg:py-5 rounded-xl transition-colors min-h-[64px] lg:min-h-[72px] shadow-lg shadow-blue-100"
                     >
                         <svg v-if="!submitting && !form.processing" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">

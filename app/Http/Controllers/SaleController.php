@@ -138,7 +138,7 @@ class SaleController extends Controller
     {
         $request->validate([
             'items'                  => 'nullable|array',
-            'items.*.product_id'     => 'required|exists:products,id',
+            'items.*.product_id'     => 'nullable|exists:products,id',
             'items.*.variant_id'     => 'nullable|exists:product_variants,id',
             'items.*.qty'            => 'required|numeric|min:0.01',
             'items.*.unit_price'     => 'required|numeric|min:0',
@@ -191,6 +191,23 @@ class SaleController extends Controller
             ]);
 
             foreach ($request->items ?? [] as $item) {
+                // Custom item (no product_id) — skip stock management
+                if (empty($item['product_id'])) {
+                    SaleItem::create([
+                        'sale_id'        => $sale->id,
+                        'product_id'     => null,
+                        'variant_id'     => null,
+                        'product_name'   => $item['name'] ?? 'Custom Item',
+                        'unit_price'     => $item['unit_price'],
+                        'original_price' => $item['unit_price'],
+                        'cost_price'     => 0,
+                        'qty'            => $item['qty'],
+                        'discount'       => $item['discount'] ?? 0,
+                        'total'          => $item['total'],
+                    ]);
+                    continue;
+                }
+
                 $product = Product::lockForUpdate()->findOrFail($item['product_id']);
                 $variant = !empty($item['variant_id'])
                     ? ProductVariant::lockForUpdate()->findOrFail($item['variant_id'])
@@ -230,16 +247,16 @@ class SaleController extends Controller
                 }
 
                 SaleItem::create([
-                    'sale_id'      => $sale->id,
-                    'product_id'   => $product->id,
-                    'variant_id'   => $variant?->id,
+                    'sale_id'        => $sale->id,
+                    'product_id'     => $product->id,
+                    'variant_id'     => $variant?->id,
                     'product_name'   => $item['name'] ?? ($variant ? $product->name . ' - ' . $variant->label : $product->name),
                     'unit_price'     => $item['unit_price'],
                     'original_price' => $item['original_price'] ?? null,
                     'cost_price'     => $variant ? $variant->cost_price : $product->cost_price,
-                    'qty'          => $item['qty'],
-                    'discount'     => $item['discount'] ?? 0,
-                    'total'        => $item['total'],
+                    'qty'            => $item['qty'],
+                    'discount'       => $item['discount'] ?? 0,
+                    'total'          => $item['total'],
                 ]);
 
                 StockMovement::create([

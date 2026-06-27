@@ -65,17 +65,22 @@ function onGlobalKeydown(e) {
     }
 }
 
+const navigating = ref(false);
+
 let removeNavListener;
 let removeFinishListener;
+let removeStartListener;
 onMounted(() => {
     window.addEventListener('keydown', onGlobalKeydown);
     applySidebarForRoute();
     checkFlash();
-    removeNavListener    = router.on('navigate', () => { applySidebarForRoute(); checkFlash(); });
-    removeFinishListener = router.on('finish',   () => { lastFlashKey = null; checkFlash(); });
+    removeStartListener  = router.on('start',    () => { navigating.value = true; });
+    removeNavListener    = router.on('navigate', () => { navigating.value = false; applySidebarForRoute(); checkFlash(); });
+    removeFinishListener = router.on('finish',   () => { navigating.value = false; lastFlashKey = null; checkFlash(); });
 });
 onUnmounted(() => {
     window.removeEventListener('keydown', onGlobalKeydown);
+    removeStartListener?.();
     removeNavListener?.();
     removeFinishListener?.();
 });
@@ -163,6 +168,19 @@ function reloadApp() {
 
 <template>
     <div class="min-h-screen flex dark:bg-slate-900" style="background-color:#F8FAFC;">
+
+        <!-- ── Page navigation loader ── -->
+        <Transition name="nav-loader">
+            <div v-if="navigating" class="fixed inset-0 z-[9998] pointer-events-none">
+                <div class="absolute inset-0 bg-white/30 dark:bg-slate-900/30 backdrop-blur-[1px]"></div>
+                <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col items-center gap-3">
+                    <svg class="animate-spin h-9 w-9 text-blue-500 drop-shadow" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-20" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3"></circle>
+                        <path class="opacity-90" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                    </svg>
+                </div>
+            </div>
+        </Transition>
 
         <!-- ── Printer-saved toast (Ctrl+Shift+P) ── -->
         <Transition name="printer-toast">
@@ -482,6 +500,10 @@ function reloadApp() {
 </template>
 
 <style scoped>
+/* ── Navigation loader transition ── */
+.nav-loader-enter-active, .nav-loader-leave-active { transition: opacity 0.15s ease; }
+.nav-loader-enter-from, .nav-loader-leave-to       { opacity: 0; }
+
 /* ── Sidebar theming via CSS variables ── */
 .sidebar-nav-link {
     color: var(--sidebar-text, #cbd5e1);

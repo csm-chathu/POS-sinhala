@@ -44,6 +44,13 @@
     }
 }
 
+/* Small/medium screens (<1600px): zoom out to 80% so nothing gets cut off */
+@media screen and (max-width: 1599px) {
+    html {
+        zoom: 0.8;
+    }
+}
+
 /* Large monitor (≥1440px / ~19 inch+): scale everything up */
 @media (min-width: 1440px) {
     body {
