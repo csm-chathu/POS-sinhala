@@ -13,10 +13,21 @@ const props = defineProps({
 
 const t = inject('t');
 
-const search    = ref(props.filters?.search     || '');
-const categoryId = ref(props.filters?.category_id || '');
-const lowStock  = ref(props.filters?.low_stock === '1' || props.filters?.low_stock === true);
-const loading   = ref(false);
+const FILTER_KEY = 'products_filters';
+
+function loadSavedFilters() {
+    try { return JSON.parse(localStorage.getItem(FILTER_KEY) || '{}'); } catch { return {}; }
+}
+
+const saved = loadSavedFilters();
+
+const search     = ref(props.filters?.search      || saved.search      || '');
+const categoryId = ref(props.filters?.category_id || saved.category_id || '');
+const lowStock   = ref(
+    props.filters?.low_stock === '1' || props.filters?.low_stock === true ||
+    saved.low_stock === true
+);
+const loading    = ref(false);
 
 // ── CSV Import ────────────────────────────────────────────────────────────────
 const importInput    = ref(null);
@@ -52,6 +63,11 @@ onUnmounted(() => {
 let searchTimer = null;
 
 watch([search, categoryId, lowStock], () => {
+    localStorage.setItem(FILTER_KEY, JSON.stringify({
+        search:      search.value,
+        category_id: categoryId.value,
+        low_stock:   lowStock.value,
+    }));
     clearTimeout(searchTimer);
     searchTimer = setTimeout(() => {
         router.get(route('products.index'), {

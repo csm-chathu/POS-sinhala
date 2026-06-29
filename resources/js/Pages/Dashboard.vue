@@ -78,6 +78,7 @@ const statCards = [
         bg: 'bg-red-500',
         lightBg: 'bg-red-50',
         textColor: 'text-red-700',
+        href: '/products?low_stock=1',
         icon: `<svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>`,
     },
 ];
@@ -93,10 +94,13 @@ const statCards = [
 
         <!-- Stat Cards -->
         <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-            <div
+            <component
                 v-for="card in statCards"
                 :key="card.valueKey"
+                :is="card.href ? 'a' : 'div'"
+                :href="card.href || undefined"
                 class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden"
+                :class="card.href ? 'cursor-pointer hover:shadow-md transition-shadow' : ''"
             >
                 <div class="p-5">
                     <div class="flex items-center gap-4 mb-3">
@@ -114,7 +118,7 @@ const statCards = [
                     </div>
                     <p class="stat-card-label font-semibold text-gray-600 text-base">{{ t(card.labelKey) }}</p>
                 </div>
-            </div>
+            </component>
         </div>
 
         <!-- Quick Actions -->

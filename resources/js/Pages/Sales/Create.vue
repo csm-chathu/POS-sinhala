@@ -168,6 +168,7 @@ const form = useForm({
     tax:             0,
     total:           0,
     extra_charges:   null,
+    skip_print:      false,
 });
 
 // ─── Computed totals ──────────────────────────────────────────────────────────
@@ -213,6 +214,7 @@ function selectSize(size) {
     sizePickerProduct.value = null;
     sizeActiveIndex.value   = 0;
     sizePickerQty.value     = '';
+    refocusSearch();
     addToCart({
         ...p,
         variant_id:      size.id,
@@ -250,6 +252,7 @@ function addCustomWeight() {
     sizePickerProduct.value = null;
     sizeActiveIndex.value   = 0;
     sizePickerQty.value     = '';
+    refocusSearch();
 
     addToCart({
         ...p,
@@ -429,11 +432,16 @@ function onQtyKeydown(e, item) {
         qtyBuffer    += e.key;
 
         // Show the typed char(s) after 80ms if no fast second char arrives (manual typing)
+        // Also update item.qty live so the total recalculates without needing Enter.
         const el   = e.target;
         const snap = qtyBuffer;
         qtyScanTimer = setTimeout(() => {
             qtyScanTimer = null;
-            if (!qtyIsScanning && qtyBuffer === snap) el.value = qtyBuffer;
+            if (!qtyIsScanning && qtyBuffer === snap) {
+                el.value = qtyBuffer;
+                const n = parseFloat(qtyBuffer);
+                if (!isNaN(n) && n > 0) updateQty(item, n, el);
+            }
         }, 80);
     }
 }
@@ -742,7 +750,7 @@ function addCustomItem() {
 }
 
 // ─── Submit sale ──────────────────────────────────────────────────────────────
-function submitSale() {
+function submitSale(skipPrint = false) {
     errorMsg.value = '';
     if (cart.value.length === 0) { errorMsg.value = t('err.cart_empty'); return; }
     if (total.value <= 0)        { errorMsg.value = t('err.zero_total'); return; }
@@ -807,6 +815,7 @@ function submitSale() {
     form.tax            = tax.value;
     form.total          = total.value;
     form.extra_charges  = null;
+    form.skip_print     = skipPrint;
 
     form.post(route('sales.store'), {
         onSuccess: () => {
@@ -889,7 +898,8 @@ function handleGlobalKeyboard(e) {
         case 'F4':     e.preventDefault(); setPaymentMethod('credit'); break;
         case 'F5':     e.preventDefault(); setPaymentMethod('split'); break;
         case 'F5':     e.preventDefault(); holdBill();               break;
-        case 'F10':    e.preventDefault(); submitSale();             break;
+        case 'F10':    e.preventDefault(); submitSale(false);         break;
+        case 'F11':    e.preventDefault(); submitSale(true);          break;
         case 'Escape':
             if (posFullscreen?.value && !showDropdown.value && !showHoldModal.value) {
                 e.preventDefault();
@@ -1057,6 +1067,10 @@ const focusedPriceIdx = ref(null);
 
                 <!-- Barcode / Product Search -->
                 <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-100 dark:border-slate-700 p-3">
+                    <p class="text-xs font-bold text-blue-500 uppercase tracking-widest mb-2 flex items-center gap-1.5">
+                        <span class="inline-flex items-center justify-center w-4 h-4 rounded-full bg-blue-500 text-white text-[10px] font-bold leading-none">1</span>
+                        Add Products
+                    </p>
                     <div class="flex items-center gap-2">
                     <div ref="searchContainer" class="relative flex-1">
                         <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
@@ -1233,12 +1247,14 @@ const focusedPriceIdx = ref(null);
                     </div>
 
                     <!-- Empty state -->
-                    <div v-if="cart.length === 0" class="flex-1 flex flex-col items-center justify-center py-16 text-gray-300">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
-                        </svg>
-                        <p class="text-sm">{{ t('pos.cart_empty') }}</p>
-                        <p class="text-xs mt-1">{{ t('pos.add_items') }}</p>
+                    <div v-if="cart.length === 0" class="flex-1 flex flex-col items-center justify-center py-10 gap-5">
+                        <div class="flex flex-col items-center text-gray-300 dark:text-slate-600">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+                            </svg>
+                            <p class="text-base font-semibold text-gray-400 dark:text-slate-500">No items added yet</p>
+                            <p class="text-sm text-gray-300 dark:text-slate-600 mt-1">Scan barcode or search product to start sale</p>
+                        </div>
                     </div>
 
                     <!-- Cart items table (desktop) -->
@@ -1477,7 +1493,10 @@ const focusedPriceIdx = ref(null);
 
                 <!-- Payment method buttons -->
                 <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-100 dark:border-slate-700 p-4">
-                    <p class="text-xs lg:text-sm font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wider mb-3">{{ t('lbl.payment_method') }}</p>
+                    <p class="text-xs font-bold text-blue-500 uppercase tracking-widest mb-2 flex items-center gap-1.5">
+                        <span class="inline-flex items-center justify-center w-4 h-4 rounded-full bg-blue-500 text-white text-[10px] font-bold leading-none">2</span>
+                        Select Payment Method
+                    </p>
                     <div class="grid grid-cols-2 gap-2">
                         <!-- Cash F2 -->
                         <button
@@ -1626,6 +1645,10 @@ const focusedPriceIdx = ref(null);
 
                 <!-- Customer + Cash paid inline (cash/credit) -->
                 <div v-if="paymentMethod === 'cash' || paymentMethod === 'credit'" class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border p-4" :class="paymentMethod === 'credit' ? 'border-red-200 dark:border-red-900' : 'border-green-200 dark:border-green-900'">
+                    <p class="text-xs font-bold text-blue-500 uppercase tracking-widest mb-2 flex items-center gap-1.5">
+                        <span class="inline-flex items-center justify-center w-4 h-4 rounded-full bg-blue-500 text-white text-[10px] font-bold leading-none">3</span>
+                        Enter Cash Paid
+                    </p>
                     <div class="flex gap-3">
                         <!-- Customer selector -->
                         <div class="flex-1 min-w-0">
@@ -1720,22 +1743,44 @@ const focusedPriceIdx = ref(null);
 
                 <!-- Action buttons -->
                 <div class="flex flex-col gap-2 mt-auto">
-                    <!-- Complete Sale -->
-                    <button
-                        type="button"
-                        @click="submitSale"
-                        :disabled="cart.length === 0 || submitting || form.processing"
-                        class="btn-3d btn-primary-3d w-full flex items-center justify-center gap-2 text-lg lg:text-xl py-4 lg:py-5 min-h-[64px] lg:min-h-[72px]"
-                    >
-                        <svg v-if="!submitting && !form.processing" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                        <svg v-else class="animate-spin h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
-                        </svg>
-                        <span>{{ submitting || form.processing ? t('lbl.loading') : t('pos.complete_sale') }}</span>
-                    </button>
+                    <p class="text-xs font-bold text-blue-500 uppercase tracking-widest flex items-center gap-1.5">
+                        <span class="inline-flex items-center justify-center w-4 h-4 rounded-full bg-blue-500 text-white text-[10px] font-bold leading-none">4</span>
+                        Complete Sale
+                    </p>
+                    <!-- Save & Print + Save Only inline -->
+                    <div class="flex gap-2">
+                        <!-- Save & Print (F10) -->
+                        <button
+                            type="button"
+                            @click="submitSale(false)"
+                            :disabled="cart.length === 0 || submitting || form.processing"
+                            class="btn-3d btn-primary-3d flex-1 flex items-center justify-center gap-2 text-base lg:text-lg px-4 py-4 lg:py-5 min-h-[64px] lg:min-h-[72px]"
+                        >
+                            <svg v-if="!submitting && !form.processing" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                            </svg>
+                            <svg v-else class="animate-spin h-5 w-5 shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                            </svg>
+                            <span class="leading-tight text-center">{{ submitting || form.processing ? t('lbl.loading') : t('pos.complete_sale') }}</span>
+                            <span class="shrink-0 text-xs font-mono bg-white/20 px-1.5 py-0.5 rounded">F10</span>
+                        </button>
+
+                        <!-- Save Only (F11) -->
+                        <button
+                            type="button"
+                            @click="submitSale(true)"
+                            :disabled="cart.length === 0 || submitting || form.processing"
+                            class="flex flex-col items-center justify-center gap-1 px-4 py-3 min-h-[64px] lg:min-h-[72px] bg-slate-100 hover:bg-slate-200 active:bg-slate-300 disabled:opacity-40 disabled:cursor-not-allowed text-slate-700 font-semibold rounded-xl border border-slate-300 transition-colors shrink-0"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
+                            </svg>
+                            <span class="text-xs leading-tight">Save Only</span>
+                            <span class="text-xs font-mono bg-slate-300/70 px-1.5 py-0.5 rounded">F11</span>
+                        </button>
+                    </div>
 
                     <!-- Hold Bill row: hold current + view held list -->
                     <div class="flex gap-2">
@@ -1917,7 +1962,7 @@ const focusedPriceIdx = ref(null);
                     <button
                         type="button"
                         @click="showSizePicker = false; sizePickerProduct = null"
-                        class="w-full mt-4 py-2.5 text-sm text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-200 hover:bg-gray-50 dark:hover:bg-slate-700 rounded-xl transition-colors"
+                        class="w-full mt-4 py-2.5 text-sm font-semibold bg-gray-100 hover:bg-gray-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-gray-600 dark:text-slate-300 rounded-xl transition-colors"
                     >{{ t('btn.cancel') }}</button>
                 </div>
             </div>

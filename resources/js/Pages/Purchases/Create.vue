@@ -1,7 +1,7 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { Head, Link, useForm, router } from '@inertiajs/vue3';
-import { computed, ref, inject, nextTick } from 'vue';
+import { computed, ref, inject, nextTick, onMounted, onUnmounted } from 'vue';
 import axios from 'axios';
 import { invalidateProducts } from '@/stores/productCache';
 
@@ -32,6 +32,7 @@ const form = useForm({
 // Per-row search state
 const searchQueries = ref(['']);
 const openIndex = ref(null);
+const highlightIndex = ref(-1);
 
 // Quick-add product modal
 const showNewProductModal  = ref(false);
@@ -120,8 +121,14 @@ function filteredProducts(index) {
     ).slice(0, 50);
 }
 
+function focusQty(index) {
+    nextTick(() => {
+        const el = document.getElementById(`qty-${index}`);
+        if (el) { el.focus(); el.select(); }
+    });
+}
+
 function selectProduct(index, product) {
-    // Splice for full Vue reactivity on Inertia form items
     form.items.splice(index, 1, {
         ...form.items[index],
         product_id:      product.id,
@@ -131,9 +138,39 @@ function selectProduct(index, product) {
     });
     searchQueries.value[index] = product.name;
     openIndex.value = null;
+    focusQty(index);
+}
+
+function focusField(id) {
+    nextTick(() => {
+        const el = document.getElementById(id);
+        if (el) { el.focus(); el.select(); }
+    });
+}
+
+function onQtyKeydown(index, e) {
+    if (e.key !== 'Enter') return;
+    e.preventDefault();
+    focusField(`cost-${index}`);
+}
+
+function onPriceKeydown(index, field, e) {
+    if (e.key !== 'Enter') return;
+    e.preventDefault();
+    if (field === 'cost')     { focusField(`selling-${index}`); return; }
+    if (field === 'selling')  { focusField(`wholesale-${index}`); return; }
+    if (field === 'wholesale') {
+        addRow();
+        const newIndex = form.items.length - 1;
+        nextTick(() => {
+            const el = document.getElementById(`search-${newIndex}`);
+            if (el) el.focus();
+        });
+    }
 }
 
 function openSearch(index) {
+    highlightIndex.value = -1;
     openIndex.value = index;
     // If already has a product selected, clear query to allow fresh search
     if (!form.items[index].product_id) {
@@ -151,29 +188,61 @@ function clearProduct(index) {
     });
 }
 
+function scrollHighlightedIntoView(index) {
+    nextTick(() => {
+        const dropdown = document.getElementById(`dropdown-${index}`);
+        if (!dropdown) return;
+        const items = dropdown.querySelectorAll('[data-dropdown-item]');
+        items[highlightIndex.value]?.scrollIntoView({ block: 'nearest' });
+    });
+}
+
 function onSearchKeydown(index, e) {
+    const results = filteredProducts(index);
+
+    if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        openIndex.value = index;
+        highlightIndex.value = Math.min(highlightIndex.value + 1, results.length - 1);
+        scrollHighlightedIntoView(index);
+        return;
+    }
+
+    if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        highlightIndex.value = Math.max(highlightIndex.value - 1, -1);
+        scrollHighlightedIntoView(index);
+        return;
+    }
+
+    if (e.key === 'Escape') {
+        openIndex.value = null;
+        highlightIndex.value = -1;
+        return;
+    }
+
     if (e.key === 'Enter') {
         e.preventDefault();
+        // If an item is highlighted via arrow keys, select it
+        if (highlightIndex.value >= 0 && results[highlightIndex.value]) {
+            selectProduct(index, results[highlightIndex.value]);
+            highlightIndex.value = -1;
+            return;
+        }
         const q = (searchQueries.value[index] || '').trim();
         if (!q) return;
         // Exact barcode match first
         let match = localProducts.value.find(p => p.barcode && p.barcode.toLowerCase() === q.toLowerCase());
         // Fall back to single result
-        if (!match) {
-            const results = filteredProducts(index);
-            if (results.length === 1) match = results[0];
-        }
+        if (!match && results.length === 1) match = results[0];
         if (match) {
             selectProduct(index, match);
-            nextTick(() => {
-                const row = document.querySelectorAll('.purchase-qty-input')[index];
-                if (row) { row.focus(); row.select(); }
-            });
         } else {
             // No product found — open quick-add modal with the scanned barcode
             openIndex.value = null;
             openNewProductModal(index, q);
         }
+        highlightIndex.value = -1;
     }
 }
 
@@ -218,6 +287,31 @@ const grandTotal = computed(() => {
 function formatCurrency(value) {
     return 'Rs. ' + Number(value || 0).toLocaleString('en-LK', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
+
+function focusLastSearch() {
+    const lastIndex = form.items.length - 1;
+    // Focus the last unfilled search, or the last row
+    const emptyIndex = form.items.findIndex(i => !i.product_id);
+    const target = emptyIndex !== -1 ? emptyIndex : lastIndex;
+    nextTick(() => {
+        const el = document.getElementById(`search-${target}`);
+        if (el) { el.focus(); el.select(); }
+    });
+}
+
+function onGlobalKeydown(e) {
+    if (e.key === 'F1') {
+        e.preventDefault();
+        focusLastSearch();
+    }
+    if (e.key === 'F10') {
+        e.preventDefault();
+        submit();
+    }
+}
+
+onMounted(() => document.addEventListener('keydown', onGlobalKeydown));
+onUnmounted(() => document.removeEventListener('keydown', onGlobalKeydown));
 
 function submit() {
     form.items.forEach(item => {
@@ -351,7 +445,7 @@ function submit() {
                                         v-model="searchQueries[index]"
                                         type="text"
                                         autocomplete="off"
-                                        placeholder="Search or scan barcode..."
+                                        placeholder="Search or scan barcode...  [F1]"
                                         class="w-full border border-gray-300 rounded-lg pl-9 pr-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[44px]"
                                         :class="{ 'border-red-500': form.errors[`items.${index}.product_id`] }"
                                         @focus="openSearch(index)"
@@ -362,13 +456,17 @@ function submit() {
 
                                 <!-- Dropdown -->
                                 <div v-if="openIndex === index && filteredProducts(index).length > 0"
+                                    :id="`dropdown-${index}`"
                                     class="absolute z-50 left-0 right-0 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-56 overflow-y-auto"
                                 >
                                     <div
-                                        v-for="product in filteredProducts(index)"
+                                        v-for="(product, pi) in filteredProducts(index)"
                                         :key="product.id"
-                                        class="px-3 py-2 cursor-pointer hover:bg-blue-50 border-b border-gray-50 last:border-0"
+                                        data-dropdown-item
+                                        class="px-3 py-2 cursor-pointer border-b border-gray-50 last:border-0 transition-colors"
+                                        :class="pi === highlightIndex ? 'bg-blue-100' : 'hover:bg-blue-50'"
                                         @mousedown.prevent="selectProduct(index, product)"
+                                        @mousemove="highlightIndex = pi"
                                     >
                                         <div class="text-sm font-medium text-gray-800">{{ product.name }}</div>
                                         <div v-if="product.name_si" class="text-xs text-blue-600">{{ product.name_si }}</div>
@@ -391,23 +489,30 @@ function submit() {
 
                             <div class="col-span-1">
                                 <input
+                                    :id="`qty-${index}`"
                                     v-model="item.qty"
                                     type="number"
                                     min="1"
                                     class="purchase-qty-input w-full border border-gray-300 rounded-lg px-2 py-2.5 text-sm text-center focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[44px]"
+                                    @focus="$event.target.select()"
+                                    @keydown="onQtyKeydown(index, $event)"
                                 />
                             </div>
                             <div class="col-span-2">
                                 <input
+                                    :id="`cost-${index}`"
                                     v-model="item.cost_price"
                                     type="number"
                                     step="0.01"
                                     min="0"
                                     class="w-full border border-gray-300 rounded-lg px-2 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[44px]"
+                                    @focus="$event.target.select()"
+                                    @keydown="onPriceKeydown(index, 'cost', $event)"
                                 />
                             </div>
                             <div class="col-span-2">
                                 <input
+                                    :id="`selling-${index}`"
                                     v-model="item.selling_price"
                                     type="number"
                                     step="0.01"
@@ -415,10 +520,13 @@ function submit() {
                                     required
                                     class="w-full border border-gray-300 rounded-lg px-2 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 min-h-[44px]"
                                     :class="{ 'border-red-500': form.errors[`items.${index}.selling_price`] }"
+                                    @focus="$event.target.select()"
+                                    @keydown="onPriceKeydown(index, 'selling', $event)"
                                 />
                             </div>
                             <div class="col-span-2">
                                 <input
+                                    :id="`wholesale-${index}`"
                                     v-model="item.wholesale_price"
                                     type="number"
                                     step="0.01"
@@ -426,6 +534,8 @@ function submit() {
                                     required
                                     class="w-full border border-gray-300 rounded-lg px-2 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 min-h-[44px]"
                                     :class="{ 'border-red-500': form.errors[`items.${index}.wholesale_price`] }"
+                                    @focus="$event.target.select()"
+                                    @keydown="onPriceKeydown(index, 'wholesale', $event)"
                                 />
                             </div>
                             <div class="col-span-2 flex items-center justify-end gap-3 pt-1">
@@ -534,6 +644,8 @@ function submit() {
                                         type="number"
                                         min="1"
                                         class="purchase-qty-input w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[44px]"
+                                        @focus="$event.target.select()"
+                                        @keydown="onQtyKeydown(index, $event)"
                                     />
                                 </div>
                                 <div>
@@ -595,6 +707,7 @@ function submit() {
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
                             </svg>
                             {{ form.processing ? t('lbl.loading') : t('btn.save') }}
+                            <span class="ml-1 text-xs font-mono bg-white/20 px-1.5 py-0.5 rounded">F10</span>
                         </button>
                         <Link
                             :href="route('purchases.index')"

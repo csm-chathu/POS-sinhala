@@ -305,8 +305,11 @@ class SaleController extends Controller
             return $sale;
         });
 
-        return redirect(route('sales.show', $sale->id) . '?autoPrint=1')
-            ->with('success', 'විකුණුම සාර්ථකව සම්පූර්ණ විය.');
+        if ($request->boolean('skip_print')) {
+            return redirect()->route('sales.create')->with('success', 'විකුණුම සාර්ථකව සුරකින ලදී. #' . $sale->invoice_no);
+        }
+
+        return redirect(route('sales.show', $sale->id) . '?autoPrint=1')->with('success', 'විකුණුම සාර්ථකව සම්පූර්ණ විය.');
     }
 
     /**
