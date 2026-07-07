@@ -40,9 +40,9 @@ class HandleInertiaRequests extends Middleware
                         'user_auth_' . $request->user()->id,
                         300,
                         fn () => array_merge($request->user()->toArray(), [
-                            'role'        => $request->user()->getRoleNames()->first(),
-                            'roles'       => $request->user()->getRoleNames(),
-                            'permissions' => $request->user()->getAllPermissions()->pluck('name'),
+                            'role'        => $request->user()->user_type ?? 'cashier',
+                            'roles'       => [$request->user()->user_type ?? 'cashier'],
+                            'permissions' => [],
                         ])
                     )
                     : null,

@@ -22,6 +22,7 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'user_type',
     ];
 
     /**
@@ -43,13 +44,17 @@ class User extends Authenticatable
 
     protected $casts = [
         'email_verified_at' => 'datetime',
-        'password' => 'hashed',
+        'password'          => 'hashed',
     ];
 
-    public function getRoleAttribute(): ?string
+    public function getRoleAttribute(): string
     {
-        return $this->getRoleNames()->first();
+        return $this->user_type ?? 'cashier';
     }
+
+    public function isAdmin(): bool    { return $this->user_type === 'admin'; }
+    public function isManager(): bool  { return in_array($this->user_type, ['admin', 'manager']); }
+    public function isCashier(): bool  { return $this->user_type === 'cashier'; }
 
     public function sales()
     {
