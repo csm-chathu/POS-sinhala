@@ -13,6 +13,16 @@ const sidebarCollapsed = ref(localStorage.getItem('sidebarCollapsed') === 'true'
 const posFullscreen    = ref(false);
 provide('posFullscreen', posFullscreen);
 
+const fsActive = ref(false);
+function onFullscreenChange() { fsActive.value = !!document.fullscreenElement; }
+function toggleFullscreen() {
+    if (document.fullscreenElement) {
+        document.exitFullscreen?.().catch(() => {});
+    } else {
+        document.documentElement.requestFullscreen?.().catch(() => {});
+    }
+}
+
 function toggleCollapse() {
     sidebarCollapsed.value = !sidebarCollapsed.value;
     localStorage.setItem('sidebarCollapsed', sidebarCollapsed.value);
@@ -72,6 +82,7 @@ let removeFinishListener;
 let removeStartListener;
 onMounted(() => {
     window.addEventListener('keydown', onGlobalKeydown);
+    document.addEventListener('fullscreenchange', onFullscreenChange);
     applySidebarForRoute();
     checkFlash();
     removeStartListener  = router.on('start',    () => { navigating.value = true; });
@@ -80,6 +91,7 @@ onMounted(() => {
 });
 onUnmounted(() => {
     window.removeEventListener('keydown', onGlobalKeydown);
+    document.removeEventListener('fullscreenchange', onFullscreenChange);
     removeStartListener?.();
     removeNavListener?.();
     removeFinishListener?.();
@@ -164,6 +176,62 @@ function reloadApp() {
     reloading.value = true;
     window.location.reload();
 }
+
+// ── Global Touch Numpad ──────────────────────────────────────────────────────
+const numpadEnabled = computed(() => {
+    const v = page.props.appSettings?.pos_touch_numpad;
+    return v === '1' || v === true || isElectron.value;
+});
+
+const showNumpad     = ref(false);
+const numpadValue    = ref('');
+const numpadLabel    = ref('');
+const numpadMax      = ref(null);
+const numpadCallback = ref(null);
+const numpadOnInput  = ref(null);
+const numpadRaw      = ref(false);
+
+const NUMPAD_KEYS = [
+    ['7','8','9'],
+    ['4','5','6'],
+    ['1','2','3'],
+    ['.','0','⌫'],
+];
+
+function openNumpad(currentVal, label, callback, { max = null, onInput = null, raw = false } = {}) {
+    numpadLabel.value    = String(label || '');
+    numpadMax.value      = max ?? null;
+    numpadCallback.value = callback;
+    numpadOnInput.value  = onInput;
+    numpadRaw.value      = raw;
+    numpadValue.value    = String(currentVal ?? '');
+    showNumpad.value     = true;
+}
+
+function numpadKeyPress(key) {
+    if (key === 'C')  { numpadValue.value = ''; numpadOnInput.value?.(numpadValue.value); return; }
+    if (key === '⌫') { numpadValue.value = numpadValue.value.slice(0, -1); numpadOnInput.value?.(numpadValue.value); return; }
+    if (!numpadRaw.value && key === '.' && numpadValue.value.includes('.')) return;
+    if (!numpadRaw.value && numpadValue.value === '0' && key !== '.') { numpadValue.value = key; numpadOnInput.value?.(numpadValue.value); return; }
+    numpadValue.value += key;
+    numpadOnInput.value?.(numpadValue.value);
+}
+
+function numpadConfirm() {
+    numpadCallback.value?.(numpadValue.value);
+    numpadCallback.value = null;
+    numpadOnInput.value  = null;
+    showNumpad.value     = false;
+}
+
+function closeNumpad() {
+    numpadCallback.value = null;
+    numpadOnInput.value  = null;
+    showNumpad.value     = false;
+}
+
+provide('numpadEnabled', numpadEnabled);
+provide('openNumpad', openNumpad);
 </script>
 
 <template>
@@ -375,6 +443,22 @@ function reloadApp() {
                     </svg>
                 </button>
 
+                <!-- Fullscreen toggle -->
+                <button
+                    @click="toggleFullscreen"
+                    :title="fsActive ? 'Exit Fullscreen' : 'Enter Fullscreen'"
+                    class="p-2 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
+                >
+                    <!-- Enter fullscreen icon -->
+                    <svg v-if="!fsActive" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+                    </svg>
+                    <!-- Exit fullscreen icon -->
+                    <svg v-else xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 9V4.5M9 9H4.5M9 9L3.75 3.75M9 15v4.5M9 15H4.5M9 15l-5.25 5.25M15 9h4.5M15 9V4.5M15 9l5.25-5.25M15 15h4.5M15 15v4.5m0-4.5l5.25 5.25" />
+                    </svg>
+                </button>
+
                 <div class="flex items-center gap-2 ml-4 pl-4" style="border-left:1px solid #E2E8F0;">
                     <div class="hidden sm:flex items-center gap-2">
                         <div class="w-8 h-8 rounded-full flex items-center justify-center" style="background-color: var(--primary, #2563eb);">
@@ -482,6 +566,52 @@ function reloadApp() {
             </div>
         </aside>
 
+        <!-- ── Global Touch Numpad Modal ── -->
+        <Teleport to="body">
+            <Transition name="numpad-slide">
+                <div v-if="showNumpad && numpadEnabled" class="fixed inset-0 z-[9000] flex items-end print:hidden" @click.self="closeNumpad">
+                    <div class="absolute inset-0 bg-black/50" @click="closeNumpad"></div>
+                    <div class="relative w-full max-w-sm mx-auto bg-white dark:bg-slate-800 rounded-t-3xl shadow-2xl overflow-hidden">
+                        <!-- Header -->
+                        <div class="px-5 pt-4 pb-3 border-b border-gray-100 dark:border-slate-700">
+                            <div class="flex items-center justify-between mb-1">
+                                <p class="text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-slate-500">Enter Value</p>
+                                <button type="button" @click="closeNumpad" class="text-gray-400 hover:text-gray-600 dark:hover:text-slate-300 p-1">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                        <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
+                                    </svg>
+                                </button>
+                            </div>
+                            <p class="text-sm text-gray-500 dark:text-slate-400 truncate">{{ numpadLabel }}</p>
+                            <div class="mt-2 flex items-center justify-end gap-2 bg-gray-50 dark:bg-slate-900 rounded-xl px-4 py-3 min-h-[56px]">
+                                <span class="text-3xl font-bold text-gray-800 dark:text-slate-100 tracking-tight">{{ numpadValue || '0' }}</span>
+                                <span v-if="numpadMax" class="text-xs text-gray-400 dark:text-slate-500 flex-shrink-0">/ {{ numpadMax }}</span>
+                            </div>
+                        </div>
+                        <!-- Keys -->
+                        <div class="p-3 space-y-2">
+                            <div v-for="row in NUMPAD_KEYS" :key="row[0]" class="grid grid-cols-3 gap-2">
+                                <button
+                                    v-for="key in row"
+                                    :key="key"
+                                    type="button"
+                                    @click="numpadKeyPress(key)"
+                                    class="h-16 rounded-2xl text-2xl font-bold flex items-center justify-center transition-all active:scale-95"
+                                    :class="key === '⌫'
+                                        ? 'bg-red-50 dark:bg-red-950 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-900 hover:bg-red-100'
+                                        : 'bg-gray-100 dark:bg-slate-700 text-gray-800 dark:text-slate-100 border border-gray-200 dark:border-slate-600 hover:bg-gray-200 dark:hover:bg-slate-600'"
+                                >{{ key }}</button>
+                            </div>
+                            <div class="grid grid-cols-2 gap-2 pt-1">
+                                <button type="button" @click="numpadKeyPress('C')" class="h-14 rounded-2xl text-base font-bold bg-amber-50 dark:bg-amber-950 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-900 hover:bg-amber-100 active:scale-95 transition-all">Clear</button>
+                                <button type="button" @click="numpadConfirm" class="h-14 rounded-2xl text-base font-bold bg-green-500 hover:bg-green-600 text-white shadow active:scale-95 transition-all">✓ Confirm</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </Transition>
+        </Teleport>
+
         <!-- Mobile bottom nav -->
         <nav v-show="!posFullscreen" class="md:hidden fixed bottom-0 left-0 right-0 bg-white z-30 flex print:hidden" style="border-top:1px solid #E2E8F0;">
             <Link
@@ -538,6 +668,12 @@ function reloadApp() {
 /* Printer-saved toast */
 .printer-toast-enter-active, .printer-toast-leave-active { transition: all 0.25s ease; }
 .printer-toast-enter-from, .printer-toast-leave-to { opacity: 0; transform: translateY(12px); }
+
+/* Global numpad slide-up */
+.numpad-slide-enter-active,
+.numpad-slide-leave-active { transition: transform 0.22s cubic-bezier(0.4,0,0.2,1); }
+.numpad-slide-enter-from,
+.numpad-slide-leave-to    { transform: translateY(100%); }
 
 /* Global flash toast */
 .global-toast-enter-active, .global-toast-leave-active { transition: all 0.3s cubic-bezier(0.34,1.56,0.64,1); }

@@ -10,6 +10,8 @@ const locale        = inject('locale');
 const setLocale     = inject('setLocale');
 const billLocale    = inject('billLocale');
 const setBillLocale = inject('setBillLocale');
+const numpadEnabled = inject('numpadEnabled', ref(false));
+const openNumpad    = inject('openNumpad', () => {});
 
 const { setSidebarPreset, setPrimaryPreset } = useTheme();
 
@@ -287,7 +289,19 @@ async function runMigrations() {
                             </div>
                             <div>
                                 <label class="block mb-1 text-sm font-medium" style="color:#334155;">{{ t('set.tax_rate') }}</label>
-                                <input v-model="form.settings.tax_rate" type="number" min="0" max="100" step="0.01" class="w-full rounded-lg px-3 py-2 text-sm outline-none" style="border:1px solid #E2E8F0; color:#0F172A;" placeholder="0" />
+                                <input
+                                    v-model="form.settings.tax_rate"
+                                    type="number"
+                                    min="0"
+                                    max="100"
+                                    step="0.01"
+                                    class="w-full rounded-lg px-3 py-2 text-sm outline-none"
+                                    :class="numpadEnabled ? 'cursor-pointer' : ''"
+                                    style="border:1px solid #E2E8F0; color:#0F172A;"
+                                    placeholder="0"
+                                    :readonly="numpadEnabled"
+                                    @click="numpadEnabled && openNumpad(form.settings.tax_rate, t('set.tax_rate'), v => form.settings.tax_rate = parseFloat(v) || 0)"
+                                />
                             </div>
                         </div>
 

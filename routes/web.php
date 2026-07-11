@@ -7,6 +7,7 @@ use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\SupplierController;
 use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\SaleController;
+use App\Http\Controllers\SaleReturnController;
 use App\Http\Controllers\PurchaseController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\SettingController;
@@ -50,6 +51,8 @@ Route::middleware(['auth'])->group(function () {
     Route::resource('sales', SaleController::class)->only(['index', 'create', 'store', 'show']);
     Route::post('/sales/hold', [SaleController::class, 'holdBill'])->name('sales.hold');
     Route::get('/sales/held', [SaleController::class, 'getHeldBills'])->name('sales.held');
+    Route::get('/sales/{sale}/return',  [SaleReturnController::class, 'create'])->name('sales.return.create');
+    Route::post('/sales/{sale}/return', [SaleReturnController::class, 'store'])->name('sales.return.store');
     Route::get('/api/products/search',  [ProductController::class, 'search'])->name('products.search');
     Route::get('/api/products/all',     [ProductController::class, 'all'])->name('products.all');
     Route::get('/api/products/version', [ProductController::class, 'version'])->name('products.version');

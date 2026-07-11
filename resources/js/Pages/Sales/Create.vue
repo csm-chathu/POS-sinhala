@@ -968,81 +968,25 @@ function fmtQty(val) {
 
 const focusedPriceIdx = ref(null);
 
-// ─── Touch Numpad ─────────────────────────────────────────────────────────────
-const numpadEnabled  = computed(() => page.props.appSettings?.pos_touch_numpad === '1' || page.props.appSettings?.pos_touch_numpad === true);
-const showNumpad     = ref(false);
-const numpadValue    = ref('');
-const numpadItem     = ref(null);
-const numpadField    = ref(''); // 'qty' | 'unit_price' | 'discount' | 'field'
-const numpadLabel    = ref('');
-const numpadMax      = ref(null);
-const numpadCallback = ref(null); // for non-cart fields
+// ─── Touch Numpad (global — injected from AuthenticatedLayout) ───────────────
+const numpadEnabled = inject('numpadEnabled', computed(() => false));
+const openNumpad    = inject('openNumpad', () => {});
 
-const NUMPAD_KEYS = [
-    ['7','8','9'],
-    ['4','5','6'],
-    ['1','2','3'],
-    ['.','0','⌫'],
-];
-
-function openNumpad(item, field) {
-    numpadItem.value     = item;
-    numpadField.value    = field;
-    numpadLabel.value    = item.name;
-    numpadMax.value      = field === 'qty' && item.stock_qty > 0 ? item.stock_qty : null;
-    numpadCallback.value = null;
-    numpadValue.value    = String(
-        field === 'qty'        ? (item.qty ?? '')        :
-        field === 'unit_price' ? (item.unit_price ?? '') :
-        (item.discount || '')
-    );
-    showNumpad.value = true;
-}
-
-function openNumpadField(currentVal, label, callback) {
-    numpadItem.value     = null;
-    numpadField.value    = 'field';
-    numpadLabel.value    = label;
-    numpadMax.value      = null;
-    numpadCallback.value = callback;
-    numpadValue.value    = String(currentVal || '');
-    showNumpad.value     = true;
-}
-
-function numpadPress(key) {
-    if (key === 'C')  { numpadValue.value = ''; return; }
-    if (key === '⌫') { numpadValue.value = numpadValue.value.slice(0, -1); return; }
-    if (key === '.' && numpadValue.value.includes('.')) return;
-    if (numpadValue.value === '0' && key !== '.') { numpadValue.value = key; return; }
-    numpadValue.value += key;
-}
-
-function numpadConfirm() {
-    if (numpadCallback.value) {
-        numpadCallback.value(numpadValue.value);
-        numpadCallback.value = null;
-    } else {
-        const item  = numpadItem.value;
-        const field = numpadField.value;
-        if (item) {
-            if (field === 'qty') {
-                const n = parseFloat(numpadValue.value);
-                if (!isNaN(n) && n > 0) updateQty(item, n);
-            } else if (field === 'unit_price') {
-                updatePrice(item, numpadValue.value);
-            } else if (field === 'discount') {
-                updateDiscount(item, numpadValue.value);
-            }
+function openCartNumpad(item, field) {
+    const currentVal = field === 'qty' ? item.qty
+        : field === 'unit_price' ? item.unit_price
+        : item.discount;
+    openNumpad(currentVal, item.name, (val) => {
+        if (field === 'qty') {
+            const n = parseFloat(val);
+            if (!isNaN(n) && n > 0) updateQty(item, n);
+        } else if (field === 'unit_price') {
+            updatePrice(item, val);
+        } else if (field === 'discount') {
+            updateDiscount(item, val);
         }
-    }
-    showNumpad.value = false;
-    refocusSearch();
-}
-
-function closeNumpad() {
-    showNumpad.value = false;
-    numpadItem.value = null;
-    refocusSearch();
+        refocusSearch();
+    }, { max: field === 'qty' && item.stock_qty > 0 ? item.stock_qty : null });
 }
 
 // ─── Product Browser (touch mode search) ─────────────────────────────────────
@@ -1076,25 +1020,13 @@ function selectFromBrowser(product) {
 
 // When touch numpad is on, intercept product tap to ask qty before adding
 function addToCartTouched(product) {
-    // Sizes still need the size picker; weight items benefit most from numpad qty
-    if (!numpadEnabled.value || product.sizes?.length > 0) {
-        addToCart(product);
-        return;
-    }
-    if ((product.stock_qty ?? 0) <= 0) {
-        errorMsg.value = t('err.out_of_stock');
-        return;
-    }
-    numpadItem.value     = null;
-    numpadField.value    = 'field';
-    numpadLabel.value    = product.name_si ? product.name_si + ' / ' + product.name : product.name;
-    numpadMax.value      = product.stock_qty > 0 ? product.stock_qty : null;
-    numpadValue.value    = '1';
-    numpadCallback.value = (val) => {
+    if (!numpadEnabled.value || product.sizes?.length > 0) { addToCart(product); return; }
+    if ((product.stock_qty ?? 0) <= 0) { errorMsg.value = t('err.out_of_stock'); return; }
+    const label = product.name_si ? product.name_si + ' / ' + product.name : product.name;
+    openNumpad('1', label, (val) => {
         const qty = parseFloat(val);
         if (!isNaN(qty) && qty > 0) addToCart(product, qty);
-    };
-    showNumpad.value = true;
+    }, { max: product.stock_qty > 0 ? product.stock_qty : null });
 }
 </script>
 
@@ -1459,7 +1391,7 @@ function addToCartTouched(product) {
                                                 @input="numpadEnabled ? null : e => updateQty(item, e.target.value, e.target)"
                                                 @keydown="numpadEnabled ? null : onQtyKeydown($event, item)"
                                                 @focus="numpadEnabled ? $event.target.blur() : (resetQtyState(), $event.target.select())"
-                                                @click="numpadEnabled && openNumpad(item, 'qty')"
+                                                @click="numpadEnabled && openCartNumpad(item, 'qty')"
                                                 class="cart-qty-input w-14 lg:w-18 text-center border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-gray-100 rounded-lg py-1.5 px-1 focus:outline-none focus:ring-2 focus:ring-blue-300 dark:focus:ring-blue-800 text-sm lg:text-base font-medium"
                                                 :class="numpadEnabled ? 'cursor-pointer select-none' : ''"
                                             />
@@ -1481,7 +1413,7 @@ function addToCartTouched(product) {
                                             @blur="numpadEnabled ? null : (focusedPriceIdx = null, resetFldState())"
                                             @keydown="numpadEnabled ? null : e => onFieldKeydown(e, item, 'unit_price')"
                                             @change="numpadEnabled ? null : e => updatePrice(item, e.target.value)"
-                                            @click="numpadEnabled && openNumpad(item, 'unit_price')"
+                                            @click="numpadEnabled && openCartNumpad(item, 'unit_price')"
                                             class="w-16 lg:w-20 text-right border border-gray-200 dark:border-slate-600 dark:bg-slate-700 dark:text-gray-100 rounded-lg py-1.5 px-2 focus:outline-none focus:ring-2 focus:ring-blue-300 dark:focus:ring-blue-800 text-sm lg:text-base font-medium text-gray-700"
                                             :class="numpadEnabled ? 'cursor-pointer select-none' : ''"
                                         />
@@ -1497,7 +1429,7 @@ function addToCartTouched(product) {
                                             @blur="numpadEnabled ? null : resetFldState()"
                                             @keydown="numpadEnabled ? null : e => onFieldKeydown(e, item, 'discount')"
                                             @change="numpadEnabled ? null : e => updateDiscount(item, e.target.value)"
-                                            @click="numpadEnabled && openNumpad(item, 'discount')"
+                                            @click="numpadEnabled && openCartNumpad(item, 'discount')"
                                             class="w-16 lg:w-20 text-right border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-gray-100 rounded-lg py-1.5 px-2 focus:outline-none focus:ring-2 focus:ring-orange-300 dark:focus:ring-orange-800 text-sm lg:text-base"
                                             :class="numpadEnabled ? 'cursor-pointer select-none' : ''"
                                         />
@@ -1611,7 +1543,7 @@ function addToCartTouched(product) {
                                 :disabled="cart.length === 0"
                                 :readonly="numpadEnabled"
                                 @input="numpadEnabled ? null : () => { if (discountType === 'percent' && parseFloat(billDiscount) > 70) billDiscount = '70' }"
-                                @click="numpadEnabled && cart.length > 0 && openNumpadField(billDiscount, 'Bill Discount (' + (discountType === 'percent' ? '%' : 'Rs') + ')', v => { billDiscount = v; if (discountType === 'percent' && parseFloat(v) > 70) billDiscount = '70' })"
+                                @click="numpadEnabled && cart.length > 0 && openNumpad(billDiscount, 'Bill Discount (' + (discountType === 'percent' ? '%' : 'Rs') + ')', v => { billDiscount = v; if (discountType === 'percent' && parseFloat(v) > 70) billDiscount = '70' })"
                                 class="w-32 border border-slate-300 bg-white dark:border-slate-600 dark:bg-slate-700 dark:text-gray-100 dark:placeholder-slate-500 rounded-lg px-2 py-1.5 text-sm text-right text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-300 dark:focus:ring-slate-600 disabled:bg-slate-50 dark:disabled:bg-slate-800 disabled:text-gray-400"
                                 :class="numpadEnabled && cart.length > 0 ? 'cursor-pointer' : ''"
                             />
@@ -1733,7 +1665,7 @@ function addToCartTouched(product) {
                             type="text"
                             placeholder="e.g. TXN123456"
                             :readonly="numpadEnabled"
-                            @click="numpadEnabled && openNumpadField(cardReceiptNo, 'Card Reference No.', v => cardReceiptNo = v)"
+                            @click="numpadEnabled && openNumpad(cardReceiptNo, 'Card Reference No.', v => cardReceiptNo = v)"
                             class="w-full pl-9 pr-4 py-2.5 border border-blue-300 dark:border-blue-700 rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white dark:bg-slate-700 text-gray-800 dark:text-slate-100"
                             :class="numpadEnabled ? 'cursor-pointer' : ''"
                         />
@@ -1762,7 +1694,7 @@ function addToCartTouched(product) {
                             step="0.01"
                             placeholder="0.00"
                             :readonly="numpadEnabled"
-                            @click="numpadEnabled && openNumpadField(splitCashAmt, 'Split — ගෙවු මුදල (Cash)', v => splitCashAmt = v)"
+                            @click="numpadEnabled && openNumpad(splitCashAmt, 'Split — ගෙවු මුදල (Cash)', v => splitCashAmt = v)"
                             class="w-full border-2 border-indigo-300 dark:border-indigo-700 rounded-xl px-3 py-2 text-lg lg:text-xl font-bold focus:outline-none focus:ring-2 focus:ring-indigo-400 dark:bg-slate-700 dark:placeholder-slate-500 text-indigo-800 dark:text-indigo-200"
                             :class="numpadEnabled ? 'cursor-pointer' : ''"
                         />
@@ -1801,7 +1733,7 @@ function addToCartTouched(product) {
                                 type="text"
                                 placeholder="e.g. TXN123456"
                                 :readonly="numpadEnabled"
-                                @click="numpadEnabled && openNumpadField(splitCardReceiptNo, 'Split Card Reference No.', v => splitCardReceiptNo = v)"
+                                @click="numpadEnabled && openNumpad(splitCardReceiptNo, 'Split Card Reference No.', v => splitCardReceiptNo = v)"
                                 class="w-full pl-9 pr-4 py-2.5 border border-indigo-300 dark:border-indigo-700 rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-white dark:bg-slate-700 text-gray-800 dark:text-slate-100"
                                 :class="numpadEnabled ? 'cursor-pointer' : ''"
                             />
@@ -1884,7 +1816,7 @@ function addToCartTouched(product) {
                                 placeholder="0.00"
                                 :readonly="numpadEnabled"
                                 @keydown.enter.prevent="numpadEnabled ? null : submitSale()"
-                                @click="numpadEnabled && openNumpadField(cashPaid, 'ගෙවු මුදල (Cash Paid)', v => cashPaid = v)"
+                                @click="numpadEnabled && openNumpad(cashPaid, 'ගෙවු මුදල (Cash Paid)', v => cashPaid = v)"
                                 class="w-full border-2 rounded-xl px-3 py-2 text-lg lg:text-xl font-bold focus:outline-none dark:bg-slate-700 dark:placeholder-slate-500"
                                 :class="[
                                     numpadEnabled ? 'cursor-pointer' : '',
@@ -2259,10 +2191,13 @@ function addToCartTouched(product) {
                                 ref="browserSearchInput"
                                 v-model="browserQuery"
                                 type="text"
-                                placeholder="Search or scan barcode…"
+                                :placeholder="t('pos.search_product')"
                                 autocomplete="off"
                                 class="w-full pl-10 pr-4 py-3 text-base border-2 border-blue-300 dark:border-slate-600 rounded-xl focus:outline-none focus:border-blue-500 bg-white dark:bg-slate-800 dark:text-white dark:placeholder-slate-500"
-                                @keydown.enter.prevent="browserProducts.length === 1 && selectFromBrowser(browserProducts[0])"
+                                :class="numpadEnabled ? 'cursor-pointer' : ''"
+                                :readonly="numpadEnabled"
+                                @click="numpadEnabled && openNumpad(browserQuery, t('pos.search_product'), v => { browserQuery = v; browserProducts.length === 1 && selectFromBrowser(browserProducts[0]); }, { onInput: v => browserQuery = v, raw: true })"
+                                @keydown.enter.prevent="!numpadEnabled && browserProducts.length === 1 && selectFromBrowser(browserProducts[0])"
                             />
                         </div>
                         <button
@@ -2319,78 +2254,10 @@ function addToCartTouched(product) {
         </Teleport>
 
         <!-- ══ Touch Numpad Modal ══ -->
-        <Teleport to="body">
-            <Transition name="numpad-slide">
-                <div v-if="showNumpad && numpadEnabled" class="fixed inset-0 z-[60] flex items-end" @click.self="closeNumpad">
-                    <!-- Backdrop -->
-                    <div class="absolute inset-0 bg-black/50" @click="closeNumpad"></div>
-
-                    <!-- Numpad drawer -->
-                    <div class="relative w-full max-w-sm mx-auto bg-white dark:bg-slate-800 rounded-t-3xl shadow-2xl pb-safe overflow-hidden">
-                        <!-- Header: field label + current value -->
-                        <div class="px-5 pt-4 pb-3 border-b border-gray-100 dark:border-slate-700">
-                            <div class="flex items-center justify-between mb-1">
-                                <p class="text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-slate-500">
-                                    {{ numpadField === 'qty' ? 'Quantity' : numpadField === 'unit_price' ? 'Price' : 'Discount' }}
-                                </p>
-                                <button type="button" @click="closeNumpad" class="text-gray-400 hover:text-gray-600 dark:hover:text-slate-300 p-1">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                                        <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
-                                    </svg>
-                                </button>
-                            </div>
-                            <p class="text-sm text-gray-500 dark:text-slate-400 truncate">{{ numpadLabel }}</p>
-                            <!-- Value display -->
-                            <div class="mt-2 flex items-center justify-end gap-2 bg-gray-50 dark:bg-slate-900 rounded-xl px-4 py-3 min-h-[56px]">
-                                <span class="text-3xl font-bold text-gray-800 dark:text-slate-100 tracking-tight">
-                                    {{ numpadValue || '0' }}
-                                </span>
-                                <span v-if="numpadMax" class="text-xs text-gray-400 dark:text-slate-500 flex-shrink-0">/ {{ numpadMax }}</span>
-                            </div>
-                        </div>
-
-                        <!-- Numpad grid -->
-                        <div class="p-3 space-y-2">
-                            <div v-for="row in NUMPAD_KEYS" :key="row[0]" class="grid grid-cols-3 gap-2">
-                                <button
-                                    v-for="key in row"
-                                    :key="key"
-                                    type="button"
-                                    @click="numpadPress(key)"
-                                    class="h-16 rounded-2xl text-2xl font-bold flex items-center justify-center transition-all active:scale-95"
-                                    :class="key === '⌫'
-                                        ? 'bg-red-50 dark:bg-red-950 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-900 hover:bg-red-100'
-                                        : 'bg-gray-100 dark:bg-slate-700 text-gray-800 dark:text-slate-100 border border-gray-200 dark:border-slate-600 hover:bg-gray-200 dark:hover:bg-slate-600'"
-                                >{{ key }}</button>
-                            </div>
-
-                            <!-- Bottom row: Clear + Confirm -->
-                            <div class="grid grid-cols-2 gap-2 pt-1">
-                                <button
-                                    type="button"
-                                    @click="numpadPress('C')"
-                                    class="h-14 rounded-2xl text-base font-bold bg-amber-50 dark:bg-amber-950 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-900 hover:bg-amber-100 active:scale-95 transition-all"
-                                >Clear</button>
-                                <button
-                                    type="button"
-                                    @click="numpadConfirm"
-                                    class="h-14 rounded-2xl text-base font-bold bg-green-500 hover:bg-green-600 text-white shadow active:scale-95 transition-all"
-                                >✓ Confirm</button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </Transition>
-        </Teleport>
     </AuthenticatedLayout>
 </template>
 
 <style scoped>
-.numpad-slide-enter-active,
-.numpad-slide-leave-active { transition: transform 0.22s cubic-bezier(0.4,0,0.2,1); }
-.numpad-slide-enter-from,
-.numpad-slide-leave-to    { transform: translateY(100%); }
-
 .browser-fade-enter-active,
 .browser-fade-leave-active { transition: opacity 0.18s ease; }
 .browser-fade-enter-from,

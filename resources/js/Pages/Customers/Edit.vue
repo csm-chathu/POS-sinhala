@@ -1,9 +1,11 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { Head, Link, useForm } from '@inertiajs/vue3';
-import { inject } from 'vue';
+import { inject, computed } from 'vue';
 
 const t = inject('t');
+const numpadEnabled = inject('numpadEnabled', computed(() => false));
+const openNumpad    = inject('openNumpad', () => {});
 
 const props = defineProps({
     customer: { type: Object, required: true },
@@ -91,7 +93,9 @@ function submit() {
                         step="0.01"
                         min="0"
                         class="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[44px]"
-                        :class="{ 'border-red-500': form.errors.credit_limit }"
+                        :class="[{ 'border-red-500': form.errors.credit_limit }, numpadEnabled ? 'cursor-pointer' : '']"
+                        :readonly="numpadEnabled"
+                        @click="numpadEnabled && openNumpad(form.credit_limit, t('cust.credit_limit'), v => form.credit_limit = parseFloat(v) || 0)"
                     />
                     <p v-if="form.errors.credit_limit" class="text-red-500 text-xs mt-1">{{ form.errors.credit_limit }}</p>
                 </div>

@@ -61,6 +61,7 @@ const translations = {
         'btn.new_sale':    'නව විකුණුම්',
         'btn.new_product': 'නව භාණ්ඩ',
         'btn.new_purchase':'නව මිලදී ගැනීම',
+        'btn.return':      'ආපසු',
 
         // Table headers
         'th.name':         'නම',
@@ -454,6 +455,7 @@ const translations = {
         'btn.new_sale':    'New Sale',
         'btn.new_product': 'New Product',
         'btn.new_purchase':'New Purchase',
+        'btn.return':      'Return',
 
         'th.name':         'Name',
         'th.phone':        'Phone',
@@ -825,6 +827,7 @@ const translations = {
         'btn.new_sale':    'புதிய விற்பனை',
         'btn.new_product': 'புதிய பொருள்',
         'btn.new_purchase':'புதிய கொள்முதல்',
+        'btn.return':      'திரும்ப',
 
         'th.name':         'பெயர்',
         'th.phone':        'தொலைபேசி',

@@ -6,6 +6,8 @@ import axios from 'axios';
 import { getProducts, invalidateProducts } from '@/stores/productCache';
 
 const t = inject('t');
+const numpadEnabled = inject('numpadEnabled', computed(() => false));
+const openNumpad    = inject('openNumpad', () => {});
 
 const props = defineProps({
     suppliers: { type: Array, default: () => [] },
@@ -494,8 +496,11 @@ function submit() {
                                     type="number"
                                     min="1"
                                     class="purchase-qty-input w-full border border-gray-300 rounded-lg px-2 py-2.5 text-sm text-center focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[44px]"
-                                    @focus="$event.target.select()"
-                                    @keydown="onQtyKeydown(index, $event)"
+                                    :readonly="numpadEnabled"
+                                    :class="numpadEnabled ? 'cursor-pointer' : ''"
+                                    @focus="numpadEnabled ? $event.target.blur() : $event.target.select()"
+                                    @click="numpadEnabled && openNumpad(item.qty, t('th.qty'), v => { item.qty = parseFloat(v) || 1; })"
+                                    @keydown="numpadEnabled ? null : onQtyKeydown(index, $event)"
                                 />
                             </div>
                             <div class="col-span-2">
@@ -506,8 +511,11 @@ function submit() {
                                     step="0.01"
                                     min="0"
                                     class="w-full border border-gray-300 rounded-lg px-2 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[44px]"
-                                    @focus="$event.target.select()"
-                                    @keydown="onPriceKeydown(index, 'cost', $event)"
+                                    :readonly="numpadEnabled"
+                                    :class="numpadEnabled ? 'cursor-pointer' : ''"
+                                    @focus="numpadEnabled ? $event.target.blur() : $event.target.select()"
+                                    @click="numpadEnabled && openNumpad(item.cost_price, t('prod.buy_price'), v => { item.cost_price = parseFloat(v) || 0; })"
+                                    @keydown="numpadEnabled ? null : onPriceKeydown(index, 'cost', $event)"
                                 />
                             </div>
                             <div class="col-span-2">
@@ -519,9 +527,11 @@ function submit() {
                                     min="0"
                                     required
                                     class="w-full border border-gray-300 rounded-lg px-2 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 min-h-[44px]"
-                                    :class="{ 'border-red-500': form.errors[`items.${index}.selling_price`] }"
-                                    @focus="$event.target.select()"
-                                    @keydown="onPriceKeydown(index, 'selling', $event)"
+                                    :class="[{ 'border-red-500': form.errors[`items.${index}.selling_price`] }, numpadEnabled ? 'cursor-pointer' : '']"
+                                    :readonly="numpadEnabled"
+                                    @focus="numpadEnabled ? $event.target.blur() : $event.target.select()"
+                                    @click="numpadEnabled && openNumpad(item.selling_price, t('prod.sell_price'), v => item.selling_price = parseFloat(v) || 0)"
+                                    @keydown="numpadEnabled ? null : onPriceKeydown(index, 'selling', $event)"
                                 />
                             </div>
                             <div class="col-span-2">
@@ -533,9 +543,11 @@ function submit() {
                                     min="0"
                                     required
                                     class="w-full border border-gray-300 rounded-lg px-2 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 min-h-[44px]"
-                                    :class="{ 'border-red-500': form.errors[`items.${index}.wholesale_price`] }"
-                                    @focus="$event.target.select()"
-                                    @keydown="onPriceKeydown(index, 'wholesale', $event)"
+                                    :class="[{ 'border-red-500': form.errors[`items.${index}.wholesale_price`] }, numpadEnabled ? 'cursor-pointer' : '']"
+                                    :readonly="numpadEnabled"
+                                    @focus="numpadEnabled ? $event.target.blur() : $event.target.select()"
+                                    @click="numpadEnabled && openNumpad(item.wholesale_price, t('prod.wholesale_price'), v => item.wholesale_price = parseFloat(v) || 0)"
+                                    @keydown="numpadEnabled ? null : onPriceKeydown(index, 'wholesale', $event)"
                                 />
                             </div>
                             <div class="col-span-2 flex items-center justify-end gap-3 pt-1">
@@ -804,19 +816,25 @@ function submit() {
                                 <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Cost (Rs.)</label>
                                 <input id="new-product-cost" v-model="newProductForm.cost_price" type="number" step="0.01" min="0" placeholder="0.00"
                                     class="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                    @keydown.enter.prevent="modalFocusNext('new-product-cost')" />
+                                    :readonly="numpadEnabled" :class="numpadEnabled ? 'cursor-pointer' : ''"
+                                    @click="numpadEnabled && openNumpad(newProductForm.cost_price, 'Cost Price', v => newProductForm.cost_price = v)"
+                                    @keydown.enter.prevent="numpadEnabled ? null : modalFocusNext('new-product-cost')" />
                             </div>
                             <div>
                                 <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Selling (Rs.) <span class="text-red-500">*</span></label>
                                 <input id="new-product-selling" v-model="newProductForm.selling_price" type="number" step="0.01" min="0" placeholder="0.00"
                                     class="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
-                                    @keydown.enter.prevent="modalFocusNext('new-product-selling')" />
+                                    :readonly="numpadEnabled" :class="numpadEnabled ? 'cursor-pointer' : ''"
+                                    @click="numpadEnabled && openNumpad(newProductForm.selling_price, 'Selling Price', v => newProductForm.selling_price = v)"
+                                    @keydown.enter.prevent="numpadEnabled ? null : modalFocusNext('new-product-selling')" />
                             </div>
                             <div class="col-span-2">
                                 <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Wholesale (Rs.)</label>
                                 <input id="new-product-wholesale" v-model="newProductForm.wholesale_price" type="number" step="0.01" min="0" placeholder="0.00"
                                     class="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
-                                    @keydown.enter.prevent="modalFocusNext('new-product-wholesale')" />
+                                    :readonly="numpadEnabled" :class="numpadEnabled ? 'cursor-pointer' : ''"
+                                    @click="numpadEnabled && openNumpad(newProductForm.wholesale_price, 'Wholesale Price', v => newProductForm.wholesale_price = v)"
+                                    @keydown.enter.prevent="numpadEnabled ? null : modalFocusNext('new-product-wholesale')" />
                             </div>
                         </div>
                     </div>
