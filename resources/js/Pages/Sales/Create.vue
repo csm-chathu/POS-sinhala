@@ -191,9 +191,11 @@ const total   = computed(() => Math.max(0, subtotal.value - totalDiscount.value 
 const balance       = computed(() => (parseFloat(cashPaid.value) || 0) - total.value);
 const splitCardAmt  = computed(() => Math.max(0, total.value - (parseFloat(splitCashAmt.value) || 0)));
 
-// ─── Dropdown items: popular when query empty, search results otherwise ───────
+// ─── Dropdown items: first 20 products when query empty, search results otherwise
 const dropdownItems = computed(() =>
-    searchQuery.value.trim() === '' ? [] : searchResults.value
+    searchQuery.value.trim() === ''
+        ? allProducts.value.slice(0, 20)
+        : searchResults.value
 );
 
 // ─── Size picker ─────────────────────────────────────────────────────────────
@@ -467,7 +469,7 @@ function resetScanState() {
 function onSearchFocus() {
     activeIndex.value = -1;
     if (blockNextDropdownOpen) { blockNextDropdownOpen = false; return; }
-    showDropdown.value = dropdownItems.value.length > 0;
+    showDropdown.value = productsReady.value && dropdownItems.value.length > 0;
 }
 
 function onSearchBlur(e) {
@@ -487,7 +489,7 @@ function onSearchInput() {
     const q = searchQuery.value.trim().toLowerCase();
     if (!q) {
         searchResults.value = [];
-        showDropdown.value  = false;
+        showDropdown.value  = productsReady.value && allProducts.value.length > 0;
         resetScanState();
         return;
     }
