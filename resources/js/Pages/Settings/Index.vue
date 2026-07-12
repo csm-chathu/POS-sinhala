@@ -70,6 +70,9 @@ const form = useForm({
         demo_mode:         props.settings.demo_mode === '1' || props.settings.demo_mode === true,
         printer_name:      props.settings.printer_name || '',
         pos_touch_numpad:  props.settings.pos_touch_numpad === '1' || props.settings.pos_touch_numpad === true,
+        pos_auto_scale:    props.settings.pos_auto_scale === undefined || props.settings.pos_auto_scale === null
+                               ? true
+                               : (props.settings.pos_auto_scale === '1' || props.settings.pos_auto_scale === true),
     },
 });
 
@@ -468,6 +471,23 @@ async function runMigrations() {
                                 <span
                                     class="inline-block h-4 w-4 transform rounded-full bg-white transition-transform shadow"
                                     :class="form.settings.pos_touch_numpad ? 'translate-x-6' : 'translate-x-1'"
+                                ></span>
+                            </button>
+                        </div>
+                        <div class="flex items-center justify-between py-1 mt-1">
+                            <div>
+                                <p class="text-sm font-medium" style="color:#334155;">Auto Scale (80%)</p>
+                                <p class="text-xs mt-0.5" style="color:#94A3B8;">Automatically zoom to 80% on screens narrower than 1500px — turn off to keep 100%</p>
+                            </div>
+                            <button
+                                type="button"
+                                @click="form.settings.pos_auto_scale = !form.settings.pos_auto_scale"
+                                class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors flex-shrink-0 ml-3"
+                                :style="form.settings.pos_auto_scale ? 'background:#7C3AED;' : 'background:#D1D5DB;'"
+                            >
+                                <span
+                                    class="inline-block h-4 w-4 transform rounded-full bg-white transition-transform shadow"
+                                    :class="form.settings.pos_auto_scale ? 'translate-x-6' : 'translate-x-1'"
                                 ></span>
                             </button>
                         </div>

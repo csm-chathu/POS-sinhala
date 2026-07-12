@@ -2,11 +2,6 @@ import './bootstrap';
 import '../css/app.css';
 
 import { createApp, h } from 'vue';
-
-// Zoom out on small screens based on actual screen resolution
-if (window.screen.width < 1500) {
-    document.documentElement.style.zoom = '0.8';
-}
 import { createInertiaApp } from '@inertiajs/vue3';
 import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
 import { ZiggyVue } from '../../vendor/tightenco/ziggy';
@@ -24,6 +19,12 @@ createInertiaApp({
         const dbSettings = props.initialPage?.props?.appSettings || {};
         initLocale(dbSettings);
         initTheme(dbSettings);
+
+        // Auto-scale: zoom to 80% on screens narrower than 1500px unless explicitly disabled
+        const scaleOff = dbSettings.pos_auto_scale === '0' || dbSettings.pos_auto_scale === false;
+        if (!scaleOff && window.screen.width < 1500) {
+            document.documentElement.style.zoom = '0.8';
+        }
         const { locale, t, toggleLocale, setLocale, billLocale, tBill, setBillLocale } = useLocale();
         const { applyTheme, setSidebarPreset, setPrimaryPreset, sidebarPreset, primaryPreset } = useTheme();
         applyTheme();
