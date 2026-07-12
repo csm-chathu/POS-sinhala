@@ -77,7 +77,7 @@ class User extends Authenticatable
 
     public function syncRole(string $roleName): void
     {
-        $role = Role::where('name', $roleName)->first();
+        $role = $roleName ? Role::where('name', $roleName)->first() : null;
         $this->roles()->sync($role ? [$role->id] : []);
     }
 }

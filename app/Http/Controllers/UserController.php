@@ -68,7 +68,7 @@ class UserController extends Controller
         ]);
 
         if (!empty($validated['role'])) {
-            $user->syncRoles($validated['role']);
+            $user->syncRole($validated['role']);
         }
 
         return redirect()->route('users.index')->with('success', 'User created successfully.');
@@ -131,7 +131,7 @@ class UserController extends Controller
         $user->update($updateData);
 
         if (array_key_exists('role', $validated)) {
-            $user->syncRoles($validated['role'] ? [$validated['role']] : []);
+            $user->syncRole($validated['role'] ?? '');
         }
 
         Cache::forget('user_auth_' . $user->id);
