@@ -132,7 +132,12 @@ class DashboardController extends Controller
                     'sales.id', 'sales.invoice_no',
                     'sales.total', 'sales.created_at',
                     'users.name as user_name',
-                ]);
+                ])->map(function ($sale) {
+                    $sale->created_at = $sale->created_at
+                        ? \Carbon\Carbon::parse($sale->created_at, config('app.timezone'))->toISOString()
+                        : null;
+                    return $sale;
+                });
 
             // ── Expiring soon — 1 query ───────────────────────────────
             $expiringSoon = DB::table('products')
