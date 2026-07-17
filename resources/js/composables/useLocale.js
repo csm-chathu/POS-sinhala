@@ -13,8 +13,9 @@ const translations = {
     // ══════════════════════════════════════════════════════════════════
     si: {
         // Nav
-        'nav.dashboard':   'මුල් පිටුව',
-        'nav.sales':       'විකුණුම්',
+        'nav.dashboard':      'මුල් පිටුව',
+        'nav.sales':          'විකුණුම්',
+        'nav.sale_history':   'විකුණුම් ඉතිහාසය',
         'nav.products':    'භාණ්ඩ',
         'nav.categories':  'කාණ්ඩ',
         'nav.promotions':  'පිරිනැමීම්',
@@ -408,8 +409,9 @@ const translations = {
     // ENGLISH
     // ══════════════════════════════════════════════════════════════════
     en: {
-        'nav.dashboard':   'Dashboard',
-        'nav.sales':       'Sales',
+        'nav.dashboard':      'Dashboard',
+        'nav.sales':          'Sales',
+        'nav.sale_history':   'Sale History',
         'nav.products':    'Products',
         'nav.categories':  'Categories',
         'nav.promotions':  'Promotions',
@@ -780,8 +782,9 @@ const translations = {
     // TAMIL
     // ══════════════════════════════════════════════════════════════════
     ta: {
-        'nav.dashboard':   'முகப்பு',
-        'nav.sales':       'விற்பனை',
+        'nav.dashboard':      'முகப்பு',
+        'nav.sales':          'விற்பனை',
+        'nav.sale_history':   'விற்பனை வரலாறு',
         'nav.products':    'பொருட்கள்',
         'nav.categories':  'வகைகள்',
         'nav.promotions':  'விளம்பரங்கள்',
