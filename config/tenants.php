@@ -7,7 +7,7 @@
 | Maps each domain/subdomain to its own MySQL database credentials.
 | Add one entry per client shop. The host key must match the exact
 | HTTP Host header (no port, no trailing slash).
-|
+|chandana.lumac.lk
 | Example:
 |   'asitha-pos.lumac.lk' => [
 |       'database' => 'asitha_lmucpos',
@@ -30,6 +30,11 @@ return [
     ],
     'lover-kahatagasdigiliya.lumac.lk' => [
         'database' => 'lmucunal_lover_kahatagasdigiliya',
+        'username' => 'lmucunal_mysql',
+        'password' => 'K!ngd0m@!t0ne',
+    ],
+    'chandana.lumac.lk' => [
+        'database' => 'lmucunal_chandana',
         'username' => 'lmucunal_mysql',
         'password' => 'K!ngd0m@!t0ne',
     ],
