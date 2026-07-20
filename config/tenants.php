@@ -18,43 +18,28 @@
 */
 
 return [
-    'mailagas.lumac.lk' => [
-        'database' => 'lmucunal_mailagas_pos',
+    'lover-kahatagasdigiliya.lumac.cc' => [
+        'database' => 'lover_kahatagasdigiliya',
         'username' => 'lmucunal_mysql',
         'password' => 'K!ngd0m@!t0ne',
     ],
-    'asitha-pos.lumac.lk' => [
-        'database' => 'lmucunal_asitha_pos',
+    'chandana.lumac.cc' => [
+        'database' => 'chandana_super',
         'username' => 'lmucunal_mysql',
         'password' => 'K!ngd0m@!t0ne',
     ],
-    'lover-kahatagasdigiliya.lumac.lk' => [
-        'database' => 'lmucunal_lover_kahatagasdigiliya',
+    'hiruna-marketing.lumac.cc' => [
+        'database' => 'hiruna_marketing',
         'username' => 'lmucunal_mysql',
         'password' => 'K!ngd0m@!t0ne',
     ],
-    'chandana.lumac.lk' => [
-        'database' => 'lmucunal_chandana',
+    'pos.lumac.cc' => [
+        'database' => 'enewirathna_super',
         'username' => 'lmucunal_mysql',
         'password' => 'K!ngd0m@!t0ne',
     ],
-    'renuka.lumac.lk' => [
-        'database' => 'lmucunal_renuka',
-        'username' => 'lmucunal_mysql',
-        'password' => 'K!ngd0m@!t0ne',
-    ],
-    'hiruna-marketing.lumac.lk' => [
-        'database' => 'lmucunal_hiruna_marketing',
-        'username' => 'lmucunal_mysql',
-        'password' => 'K!ngd0m@!t0ne',
-    ],
-    'pos.lumac.lk' => [
-        'database' => 'lmucunal_senewirathna',
-        'username' => 'lmucunal_mysql',
-        'password' => 'K!ngd0m@!t0ne',
-    ],
-        'localhost' => [
-        'database' => 'ranali',
+    'localhost' => [
+        'database' => 'pos',
         'username' => 'root',
         'password' => 'root',
     ],
