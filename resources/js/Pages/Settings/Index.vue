@@ -22,7 +22,6 @@ const LANGS = [
 ];
 
 
-
 const props = defineProps({
     settings: { type: Object, default: () => ({}) },
 });
