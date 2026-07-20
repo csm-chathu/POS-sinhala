@@ -20,23 +20,23 @@
 return [
     'lover-kahatagasdigiliya.lumac.cc' => [
         'database' => 'lover_kahatagasdigiliya',
-        'username' => 'lmucunal_mysql',
-        'password' => 'K!ngd0m@!t0ne',
+        'username' => 'root',
+        'password' => 'Pos@2026Strong',
     ],
     'chandana.lumac.cc' => [
         'database' => 'chandana_super',
-        'username' => 'lmucunal_mysql',
-        'password' => 'K!ngd0m@!t0ne',
+        'username' => 'root',
+        'password' => 'Pos@2026Strong',
     ],
     'hiruna-marketing.lumac.cc' => [
         'database' => 'hiruna_marketing',
-        'username' => 'lmucunal_mysql',
-        'password' => 'K!ngd0m@!t0ne',
+        'username' => 'root',
+        'password' => 'Pos@2026Strong',
     ],
     'pos.lumac.cc' => [
         'database' => 'enewirathna_super',
-        'username' => 'lmucunal_mysql',
-        'password' => 'K!ngd0m@!t0ne',
+        'username' => 'root',
+        'password' => 'Pos@2026Strong',
     ],
     'localhost' => [
         'database' => 'pos',
